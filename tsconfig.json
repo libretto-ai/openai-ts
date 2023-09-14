@@ -1,9 +1,10 @@
 {
     "compilerOptions": {
         "lib": [
-            "es2022"
+            "es2022",
+            "DOM"
         ],
-        "module": "ESNext",
+        "module": "CommonJS",
         "moduleResolution": "node",
         "target": "es2022",
         "strict": true,
@@ -14,6 +15,7 @@
         "declaration": true
     },
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "examples/**/*"
     ]
 }
