@@ -2,6 +2,31 @@
 const templateExpression = /({[a-zA-Z0-9_[\].]+})/g;
 const templateExpressionVarName = /{([a-zA-Z0-9_[\].]+)}/g;
 
+/**
+ * An alternative to template literals that allows for capturing the name of the
+ * variables involved, and doing variable substitution at a later time.
+ *
+ * This is used for prompts where you want the same prompt but swap out certain values.
+ *
+ * Example:
+ *
+ * ```
+ * const template = f`Hello {name}!`;
+ *
+ * // exposes the following:
+ * template.variables; // ["name"]
+ * template.format({name: "World"}); // "Hello World!"
+ * template.template; // "Hello {name}!"
+ * ```
+ *
+ *
+ * @param strings The string parts passed to the template literal
+ * @returns An object with the following properties:
+ * - `variables`: The names of the variables used in the template
+ * - `format`: A function that takes a dictionary of variable names to values, and returns the formatted string
+ * - `template`: The original template string
+ * @throws If the template literal contains any inline variables (e.g. `${name}` instead of `{name}`)
+ */
 export function f(
   strings: TemplateStringsArray | string,
   ...inlineVariables: any[]
@@ -31,15 +56,53 @@ export function f(
       });
     },
     variables: Object.freeze(variables),
+    template: str,
   };
 }
 
-interface ObjectTemplate<T> {
+/**
+ * A template for nested objects, most useful when constructing chat prompts.
+ */
+export interface ObjectTemplate<T> {
+  /**
+   * A function that takes a dictionary of variable names to values, and returns the formatted object
+   */
   format(parameters: Record<string, any>): T;
+  /**
+   * The names of the variables used in the template
+   */
   variables: readonly string[];
+  /**
+   * The original template object
+   */
+  template: T;
 }
 
-export function objTemplate<T extends any>(objs: T): ObjectTemplate<T> {
+/**
+ * A template for nested objects, most useful when constructing chat prompts.
+ *
+ * Example:
+ *
+ * ```
+ * const template = objectTemplate([{
+ *   "role": "user",
+ *   "content": f`Hello {name}!`
+ * }]);
+ *
+ * // exposes the following:
+ * template.variables; // ["name"]
+ * template.format({name: "World"}); // [{role: "user", content: "Hello World!"}]
+ * template.template; // [{role: "user", content: "Hello {name}!"}]
+ * ```
+ *
+ * @param objs The object to template
+ * @returns An object with the following properties:
+ * - `variables`: The names of the variables used in the template
+ * - `format`: A function that takes a dictionary of variable names to values, and returns the formatted object
+ * - `template`: The original template object
+ * @throws If the template literal contains any inline variables (e.g. `${name}` instead of `{name}`)
+ */
+export function objectTemplate<T extends any>(objs: T): ObjectTemplate<T> {
   const variables = objTemplateVariables(objs);
 
   function format(parameters: Record<string, any>): T {
@@ -50,14 +113,14 @@ export function objTemplate<T extends any>(objs: T): ObjectTemplate<T> {
       return f(objs).format(parameters) as T;
     }
     if (Array.isArray(objs)) {
-      return objs.map((item) => objTemplate(item).format(parameters)) as T;
+      return objs.map((item) => objectTemplate(item).format(parameters)) as T;
     }
 
     return Object.fromEntries(
       Object.entries(objs).map(([key, value]) => {
         return [
           f(key).format(parameters),
-          objTemplate(value).format(parameters),
+          objectTemplate(value).format(parameters),
         ];
       })
     ) as T;
@@ -65,6 +128,7 @@ export function objTemplate<T extends any>(objs: T): ObjectTemplate<T> {
   return {
     format,
     variables: Object.freeze(variables),
+    template: objs,
   };
 }
 

@@ -1,4 +1,4 @@
-import { f, objTemplate } from "./template";
+import { f, objectTemplate } from "./template";
 
 describe("templating", () => {
   describe("f", () => {
@@ -25,13 +25,13 @@ describe("templating", () => {
   describe("objTemplate", () => {
     it("should extract variables from objects", () => {
       expect(
-        objTemplate({ a: "A here: {a}", b: "B here: {b}" }).variables
+        objectTemplate({ a: "A here: {a}", b: "B here: {b}" }).variables
       ).toEqual(["a", "b"]);
     });
 
     it("should extract variables from nested objects", () => {
       expect(
-        objTemplate({
+        objectTemplate({
           a: "A here: {a}",
           b: "B here: {b}",
           c: { d: "D here: {d}", e: "E here: {e}" },
@@ -40,7 +40,7 @@ describe("templating", () => {
     });
 
     it("should extract variables from arrays", () => {
-      expect(objTemplate(["A here: {a}", "B here: {b}"]).variables).toEqual([
+      expect(objectTemplate(["A here: {a}", "B here: {b}"]).variables).toEqual([
         "a",
         "b",
       ]);
@@ -48,7 +48,7 @@ describe("templating", () => {
 
     it("Should handle nulls, undefined, and numbers in variable extraction", () => {
       expect(
-        objTemplate({
+        objectTemplate({
           a: "A here: {a}",
           b: "B here: {b}",
           c: { d: "D here: {d}", e: "E here: {e}" },
@@ -61,7 +61,7 @@ describe("templating", () => {
 
     it("Should format a chat template", () => {
       expect(
-        objTemplate([
+        objectTemplate([
           {
             role: "system",
             content:
