@@ -1,4 +1,3 @@
-import { fetch } from "openai/_shims/fetch-node";
 import { type CompletionCreateParamsNonStreaming } from "openai/resources";
 import { type ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat";
 
