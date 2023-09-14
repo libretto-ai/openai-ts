@@ -21,24 +21,51 @@ declare module "openai/resources/chat/completions" {
 interface OpenAIExtraParams {
   apiKey?: string;
   promptTemplateName?: string;
-  eventId?: string;
   templateText?: string;
   templateChat?: any[];
   templateParams?: Record<string, any>;
   chatId?: string;
   parentEventId?: string;
 }
-export function patch({
-  apiKey,
-  chatId,
-  eventId,
-  parentEventId,
-  promptTemplateName,
-  templateChat,
+export function patch(params?: OpenAIExtraParams) {
+  const {
+    apiKey,
+    chatId,
+    parentEventId,
+    promptTemplateName,
+    templateChat,
+    templateParams,
+    templateText,
+  } = params ?? {};
+  const originalCreateChat = makeCreateChat({
+    templateParams,
+    apiKey,
+    templateChat,
+    promptTemplateName,
+    chatId,
+    parentEventId,
+  });
+
+  return () => {
+    OpenAI.Chat.Completions.prototype.create = originalCreateChat;
+  };
+}
+
+function makeCreateChat({
   templateParams,
-  templateText,
-}: OpenAIExtraParams) {
-  debugger;
+  apiKey,
+  templateChat,
+  promptTemplateName,
+  chatId,
+  parentEventId,
+}: {
+  templateParams: Record<string, any> | undefined;
+  apiKey: string | undefined;
+  templateChat: any[] | undefined;
+  promptTemplateName: string | undefined;
+  chatId: string | undefined;
+  parentEventId: string | undefined;
+}) {
   const originalCreateChat = OpenAI.Chat.Completions.prototype.create;
 
   const newCreateChat = async function (
@@ -59,6 +86,7 @@ export function patch({
       stream,
       ...openaiBody
     } = body;
+
     const resultPromise = originalCreateChat.apply(this, [
       { ...openaiBody, messages, stream },
       options,
@@ -77,9 +105,8 @@ export function patch({
       responseTime,
       response: staticContent,
       params: ip_template_params ?? templateParams ?? {},
-      apiKey: ip_api_key ?? apiKey,
-      promptTemplateText: ip_template_text ?? templateText,
-      promptTemplateChat: ip_template_chat ?? templateChat,
+      apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
+      promptTemplateChat: ip_template_chat ?? templateChat ?? messages,
       apiName: promptTemplateName,
       chatId: ip_chat_id ?? chatId,
       parentEventId: ip_parent_event_id ?? parentEventId,
@@ -93,10 +120,7 @@ export function patch({
   } as typeof originalCreateChat;
 
   OpenAI.Chat.Completions.prototype.create = newCreateChat;
-
-  return () => {
-    OpenAI.Chat.Completions.prototype.create = originalCreateChat;
-  };
+  return originalCreateChat;
 }
 
 function getStaticContent(

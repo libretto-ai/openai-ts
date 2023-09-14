@@ -30,8 +30,6 @@ export interface PromptEvent {
   /** From @imaginary-dev/core */
   /* prompt: ImaginaryFunctionDefinition; */
   params: Record<string, any>;
-  /** Unique Id linking prompt with reply */
-  promptEventId?: string;
   /** Included after response */
   response?: string | null;
   /** Response time in ms */
@@ -43,16 +41,29 @@ export interface PromptEvent {
 export async function send_event(event: EventMetadata & PromptEvent) {
   const url =
     process.env.PROMPT_REPORTING_URL ?? "https://app.imaginary.dev/api/event";
+  const body = JSON.stringify(event);
   const response = await fetch(url, {
     method: "POST",
-    body: JSON.stringify(event),
+    body,
     headers: {
       "Content-Type": "application/json",
     },
   });
+  const responseJson = await extractJsonBody(response);
   if (!response.ok) {
-    throw new Error("Failed to send event");
+    throw new Error(`Failed to send event: ${JSON.stringify(responseJson)}`);
   }
 
-  return response.json();
+  return responseJson;
+}
+
+export async function extractJsonBody(response: Response) {
+  try {
+    const responseJson = await response.json();
+    return responseJson;
+  } catch (e) {
+    throw new Error(
+      `Unparseable response: ${response.status} ${response.statusText} ${e}`
+    );
+  }
 }
