@@ -15,7 +15,7 @@ export function patch(params?: OpenAIExtraParams) {
     templateParams,
     templateText,
   } = params ?? {};
-  const originalCreateChat = makeCreateChat({
+  const originalCreateChat = patchChatCreate({
     templateParams,
     apiKey,
     templateChat,
@@ -24,7 +24,7 @@ export function patch(params?: OpenAIExtraParams) {
     parentEventId,
   });
 
-  const originalCreateCompletion = patchCreateCompletion({
+  const originalCreateCompletion = patchCompletionCreate({
     templateParams,
     apiKey,
     templateText,
@@ -38,7 +38,7 @@ export function patch(params?: OpenAIExtraParams) {
     OpenAI.Completions.prototype.create = originalCreateCompletion;
   };
 }
-function makeCreateChat({
+function patchChatCreate({
   templateParams,
   apiKey,
   templateChat,
@@ -88,7 +88,7 @@ function makeCreateChat({
     const resolvedPromptTemplateName =
       ip_prompt_template_name ?? promptTemplateName;
 
-    if (ip_only_named_prompts && !ip_prompt_template_name) {
+    if (ip_only_named_prompts && !resolvedPromptTemplateName) {
       return resultPromise;
     }
     if (stream) {
@@ -101,6 +101,7 @@ function makeCreateChat({
     const staticResult = "choices" in result ? result : null;
 
     const staticContent = getStaticContent(staticResult);
+    // note: not awaiting the result of this
     send_event({
       responseTime,
       response: staticContent,
@@ -128,7 +129,7 @@ function makeCreateChat({
 
 type PromptString = string | string[] | number[] | number[][] | null;
 
-function patchCreateCompletion({
+function patchCompletionCreate({
   templateParams,
   apiKey,
   templateText,
@@ -174,6 +175,7 @@ function patchCreateCompletion({
       { ...openaiBody, prompt: resolvedPrompt, stream },
       options,
     ]);
+
     const resolvedPromptStr = Array.isArray(resolvedPrompt)
       ? null
       : resolvedPrompt;
@@ -181,7 +183,7 @@ function patchCreateCompletion({
     const resolvedPromptTemplateName =
       ip_prompt_template_name ?? promptTemplateName;
 
-    if (ip_only_named_prompts && !ip_prompt_template_name) {
+    if (ip_only_named_prompts && !resolvedPromptTemplateName) {
       return resultPromise;
     }
     if (stream) {
@@ -189,6 +191,7 @@ function patchCreateCompletion({
       return resultPromise;
     }
     const result = await resultPromise;
+
     const responseTime = Date.now() - now;
     const streamResult = "controller" in result ? result : null;
     const staticResult = "choices" in result ? result : null;
