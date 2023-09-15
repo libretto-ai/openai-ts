@@ -20,5 +20,6 @@ jobs:
           node-version: 18
           cache: "npm"
       - run: npm ci
-      - run: npm run build
+      # test before build as to not mess with coverage
       - run: npm test
+      - run: npm run build
