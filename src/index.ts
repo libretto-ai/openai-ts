@@ -14,13 +14,3 @@ declare module "openai/resources/chat/completions" {
     ip_parent_event_id?: string;
   }
 }
-
-export interface OpenAIExtraParams {
-  apiKey?: string;
-  promptTemplateName?: string;
-  templateText?: string;
-  templateChat?: any[];
-  templateParams?: Record<string, any>;
-  chatId?: string;
-  parentEventId?: string;
-}

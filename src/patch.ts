@@ -1,7 +1,9 @@
 import { OpenAI } from "openai";
 import { APIPromise } from "openai/core";
-import { OpenAIExtraParams } from ".";
+import { ChatCompletionMessage } from "openai/resources/chat";
 import { send_event } from "./client";
+import { OpenAIExtraParams } from "./event";
+import { ObjectTemplate } from "./template";
 
 export function patch(params?: OpenAIExtraParams) {
   const {
@@ -62,8 +64,13 @@ function makeCreateChat({
       ...openaiBody
     } = body;
 
+    const { messages: resolvedMessages, template } = getResolvedMessages(
+      messages,
+      ip_template_params
+    );
+
     const resultPromise = originalCreateChat.apply(this, [
-      { ...openaiBody, messages, stream },
+      { ...openaiBody, messages: resolvedMessages, stream },
       options,
     ]);
     if (stream) {
@@ -81,7 +88,8 @@ function makeCreateChat({
       response: staticContent,
       params: ip_template_params ?? templateParams ?? {},
       apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
-      promptTemplateChat: ip_template_chat ?? templateChat ?? messages,
+      promptTemplateChat:
+        ip_template_chat ?? template ?? templateChat ?? resolvedMessages,
       promptTemplateName: ip_prompt_template_name ?? promptTemplateName,
       apiName: ip_prompt_template_name ?? promptTemplateName,
       prompt: {},
@@ -111,4 +119,18 @@ function getStaticContent(
   if (result.choices[0].message.function_call) {
     return JSON.stringify(result.choices[0].message.function_call);
   }
+}
+
+function getResolvedMessages(
+  messages: ChatCompletionMessage[] | ObjectTemplate<ChatCompletionMessage[]>,
+  params?: Record<string, any>
+) {
+  if ("template" in messages && "format" in messages) {
+    if (!params) {
+      throw new Error(`Template requires params, but none were provided`);
+    }
+    const resolvedMessages = messages.format(params);
+    return { messages: resolvedMessages, template: messages.template };
+  }
+  return { messages, template: null };
 }
