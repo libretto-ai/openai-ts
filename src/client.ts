@@ -17,7 +17,7 @@ export type ModelParameters = OpenAIChatParameters | OpenAICompletionParameters;
  *
  */
 export interface EventMetadata {
-  promptTemplateText?: string;
+  promptTemplateText?: string | null;
   promptTemplateTextId?: string;
   promptTemplateChat?: any[];
   promptTemplateName?: string;
