@@ -20,6 +20,7 @@ export interface EventMetadata {
   promptTemplateText?: string;
   promptTemplateTextId?: string;
   promptTemplateChat?: any[];
+  promptTemplateName?: string;
   apiName?: string;
   apiKey?: string;
   chatId?: string;
@@ -36,6 +37,7 @@ export interface PromptEvent {
   responseTime?: number;
   /** Included only if there is an error from openai, or error in validation */
   responseErrors?: string[];
+  prompt: {}; //hack
 }
 
 export async function send_event(event: EventMetadata & PromptEvent) {

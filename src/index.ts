@@ -107,7 +107,9 @@ function makeCreateChat({
       params: ip_template_params ?? templateParams ?? {},
       apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
       promptTemplateChat: ip_template_chat ?? templateChat ?? messages,
-      apiName: promptTemplateName,
+      promptTemplateName: ip_prompt_template_name ?? promptTemplateName,
+      apiName: ip_prompt_template_name ?? promptTemplateName,
+      prompt: {}, // hack
       chatId: ip_chat_id ?? chatId,
       parentEventId: ip_parent_event_id ?? parentEventId,
       modelParameters: {
