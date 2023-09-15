@@ -59,6 +59,7 @@ function makeCreateChat({
       ip_prompt_template_name,
       ip_template_chat,
       ip_template_params,
+      ip_only_named_prompts,
       messages,
       stream,
       ...openaiBody
@@ -73,6 +74,13 @@ function makeCreateChat({
       { ...openaiBody, messages: resolvedMessages, stream },
       options,
     ]);
+
+    const resolvedPromptTemplateName =
+      ip_prompt_template_name ?? promptTemplateName;
+
+    if (ip_only_named_prompts && !ip_prompt_template_name) {
+      return resultPromise;
+    }
     if (stream) {
       // We don't deal with stream yet
       return resultPromise;
@@ -90,7 +98,7 @@ function makeCreateChat({
       apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
       promptTemplateChat:
         ip_template_chat ?? template ?? templateChat ?? resolvedMessages,
-      promptTemplateName: ip_prompt_template_name ?? promptTemplateName,
+      promptTemplateName: resolvedPromptTemplateName,
       apiName: ip_prompt_template_name ?? promptTemplateName,
       prompt: {},
       chatId: ip_chat_id ?? chatId,
