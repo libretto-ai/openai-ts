@@ -58,8 +58,7 @@ export async function send_event(event: EventMetadata & PromptEvent) {
 
   return responseJson;
 }
-
-export async function extractJsonBody(response: Response) {
+async function extractJsonBody(response: Response) {
   try {
     const responseJson = await response.json();
     return responseJson;

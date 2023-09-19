@@ -1,11 +1,16 @@
 {
   "name": "@imaginary-dev/openai",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "lib/src/index.js",
+  "version": "0.1.0",
+  "types": "lib/src/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "prepublish": "npm run build",
     "test": "jest"
   },
+  "files": [
+    "lib/src"
+  ],
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@types/jest": "^29.5.5",

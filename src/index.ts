@@ -1,7 +1,6 @@
-import { ChatCompletionCreateParamsBase } from "openai/resources/chat/completions";
-export * from "./client";
-export * from "./patch";
-export * from "./template";
+export { send_event } from "./client";
+export { patch } from "./patch";
+export { f, objectTemplate } from "./template";
 
 declare module "openai/resources/chat/completions" {
   interface ChatCompletionCreateParamsBase {
