@@ -1,6 +1,7 @@
 import { OpenAI } from "openai";
 import { APIPromise } from "openai/core";
 import { ChatCompletionMessage } from "openai/resources/chat";
+import { Stream } from "openai/streaming";
 import { send_event } from "./client";
 import { OpenAIExtraParams } from "./event";
 import { ObjectTemplate } from "./template";
@@ -91,40 +92,85 @@ function patchChatCreate({
     if (ip_only_named_prompts && !resolvedPromptTemplateName) {
       return resultPromise;
     }
-    if (stream) {
-      // We don't deal with stream yet
-      return resultPromise;
-    }
-    const result = await resultPromise;
-    const responseTime = Date.now() - now;
-    const streamResult = "controller" in result ? result : null;
-    const staticResult = "choices" in result ? result : null;
 
-    const staticContent = getStaticContent(staticResult);
+    const { resolvedPromise, returnValue } = await getResolvedStream(
+      resultPromise,
+      stream,
+      true
+    );
+
     // note: not awaiting the result of this
-    send_event({
-      responseTime,
-      response: staticContent,
-      params: ip_template_params ?? templateParams ?? {},
-      apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
-      promptTemplateChat:
-        ip_template_chat ?? template ?? templateChat ?? resolvedMessages,
-      promptTemplateName: resolvedPromptTemplateName,
-      apiName: ip_prompt_template_name ?? promptTemplateName,
-      prompt: {},
-      chatId: ip_chat_id ?? chatId,
-      parentEventId: ip_parent_event_id ?? parentEventId,
-      modelParameters: {
-        modelProvider: "openai",
-        modelType: "chat",
-        ...openaiBody,
-      },
+    resolvedPromise.then((response) => {
+      const responseTime = Date.now() - now;
+      send_event({
+        responseTime,
+        response,
+        params: ip_template_params ?? templateParams ?? {},
+        apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
+        promptTemplateChat:
+          ip_template_chat ?? template ?? templateChat ?? resolvedMessages,
+        promptTemplateName: resolvedPromptTemplateName,
+        apiName: ip_prompt_template_name ?? promptTemplateName,
+        prompt: {},
+        chatId: ip_chat_id ?? chatId,
+        parentEventId: ip_parent_event_id ?? parentEventId,
+        modelParameters: {
+          modelProvider: "openai",
+          modelType: "chat",
+          ...openaiBody,
+        },
+      });
     });
-    return resultPromise as APIPromise<any>;
+    return returnValue;
   } as typeof originalCreateChat;
 
   OpenAI.Chat.Completions.prototype.create = newCreateChat;
   return originalCreateChat;
+}
+
+/** This function papers over the difference between streamed and unstreamed
+ * responses. It splits the response into two parts:
+ * 1. The return value, which is what the caller should return immediately (may
+ *    be stream or raw result)
+ * 2. A promise that resolves to the final (string) result. If the original
+ *    response is streamed, this promise doesn't resolve until the stream is
+ *    finished.
+ */
+async function getResolvedStream(
+  resultPromise: APIPromise<
+    | Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
+    | Stream<OpenAI.Completions.Completion>
+    | OpenAI.Chat.Completions.ChatCompletion
+    | OpenAI.Completions.Completion
+  >,
+  stream: boolean | null | undefined,
+  isChat: boolean
+): Promise<{
+  returnValue:
+    | Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
+    | Stream<OpenAI.Completions.Completion>
+    | OpenAI.Chat.Completions.ChatCompletion
+    | OpenAI.Completions.Completion;
+  resolvedPromise: Promise<string | null | undefined>;
+}> {
+  if (stream) {
+    const chunkStream = (await resultPromise) as
+      | Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
+      | Stream<OpenAI.Completions.Completion>;
+    const wrappedStream = new WrappedStream(chunkStream as Stream<any>, isChat);
+    console.log("gack.");
+    return {
+      returnValue: wrappedStream,
+      resolvedPromise: wrappedStream.finishPromise,
+    };
+    // TODO: deal with streamed completions
+  }
+  const staticResult =
+    (await resultPromise) as OpenAI.Chat.Completions.ChatCompletion;
+  return {
+    returnValue: await resultPromise,
+    resolvedPromise: Promise.resolve(getStaticChatCompletion(staticResult)),
+  };
 }
 
 type PromptString = string | string[] | number[] | number[][] | null;
@@ -186,47 +232,43 @@ function patchCompletionCreate({
     if (ip_only_named_prompts && !resolvedPromptTemplateName) {
       return resultPromise;
     }
-    if (stream) {
-      // We don't deal with stream yet
-      return resultPromise;
-    }
-    const result = await resultPromise;
 
-    const responseTime = Date.now() - now;
-    const streamResult = "controller" in result ? result : null;
-    const staticResult = "choices" in result ? result : null;
-
-    const staticContent = getStaticCompletion(staticResult);
-    send_event({
-      responseTime,
-      response: staticContent,
-      params: ip_template_params ?? templateParams ?? {},
-      apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
-      promptTemplateText:
-        ip_template_text ?? template ?? templateText ?? resolvedPromptStr,
-      promptTemplateName: resolvedPromptTemplateName,
-      apiName: ip_prompt_template_name ?? promptTemplateName,
-      prompt: {},
-      chatId: ip_chat_id ?? chatId,
-      parentEventId: ip_parent_event_id ?? parentEventId,
-      modelParameters: {
-        modelProvider: "openai",
-        modelType: "completion",
-        ...openaiBody,
-      },
+    const { resolvedPromise, returnValue } = await getResolvedStream(
+      resultPromise,
+      stream,
+      false
+    );
+    resolvedPromise.then((response) => {
+      const responseTime = Date.now() - now;
+      send_event({
+        responseTime,
+        response,
+        params: ip_template_params ?? templateParams ?? {},
+        apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
+        promptTemplateText:
+          ip_template_text ?? template ?? templateText ?? resolvedPromptStr,
+        promptTemplateName: resolvedPromptTemplateName,
+        apiName: ip_prompt_template_name ?? promptTemplateName,
+        prompt: {},
+        chatId: ip_chat_id ?? chatId,
+        parentEventId: ip_parent_event_id ?? parentEventId,
+        modelParameters: {
+          modelProvider: "openai",
+          modelType: "completion",
+          ...openaiBody,
+        },
+      });
     });
-    return resultPromise as APIPromise<any>;
+    return returnValue;
   } as typeof originalCreateCompletion;
 
   OpenAI.Completions.prototype.create = newCreateCompletion;
   return originalCreateCompletion;
 }
-function getStaticContent(
-  result: OpenAI.Chat.Completions.ChatCompletion | null
+
+function getStaticChatCompletion(
+  result: OpenAI.Chat.Completions.ChatCompletion
 ) {
-  if (!result) {
-    return null;
-  }
   if (result.choices[0].message.content) {
     return result.choices[0].message.content;
   }
@@ -285,4 +327,49 @@ function getResolvedPrompt(
     return { prompt: resolvedPrompt, template: s.template };
   }
   return { prompt: s, template: null };
+}
+
+class WrappedStream<
+  T extends
+    | OpenAI.Chat.Completions.ChatCompletionChunk
+    | OpenAI.Completions.Completion
+> extends Stream<T> {
+  finishPromise: Promise<string>;
+  private resolveIterator!: (v: string) => void;
+  private accumulatedResult: string[] = [];
+  isChat: boolean;
+
+  constructor(innerStream: Stream<T>, isChat: boolean | undefined) {
+    super((innerStream as any).response, (innerStream as any).controller);
+    this.isChat = !!isChat;
+    this.finishPromise = new Promise((r) => (this.resolveIterator = r));
+  }
+
+  async *[Symbol.asyncIterator]() {
+    // Turn iterator into an iterable
+    const iter = super[Symbol.asyncIterator]();
+    const iterable = {
+      [Symbol.asyncIterator]: () => iter,
+    };
+    try {
+      for await (const item of iterable) {
+        if (this.isChat) {
+          const chatItem = item as OpenAI.Chat.Completions.ChatCompletionChunk;
+          if (chatItem.choices[0].delta.content) {
+            this.accumulatedResult.push(chatItem.choices[0].delta.content);
+          } else if (chatItem.choices[0].delta.function_call) {
+            this.accumulatedResult.push(
+              JSON.stringify(chatItem.choices[0].delta.function_call)
+            );
+          }
+        } else {
+          const completionItem = item as OpenAI.Completions.Completion;
+          this.accumulatedResult.push(completionItem.choices[0].text);
+        }
+        yield item;
+      }
+    } finally {
+      this.resolveIterator(this.accumulatedResult.join(""));
+    }
+  }
 }

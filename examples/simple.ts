@@ -32,7 +32,7 @@ async function main() {
   console.log("awaiting result...");
   const completion2 = await completion2P;
 
-  console.log("Completion API replied with: ", completion2.choices[0].text);
+  console.log("Completion API replied with: ", completion2);
 }
 
 main()
