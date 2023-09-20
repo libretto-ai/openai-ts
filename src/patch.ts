@@ -71,6 +71,7 @@ function patchChatCreate({
       ip_template_chat,
       ip_template_params,
       ip_only_named_prompts,
+      ip_feedback_key,
       messages,
       stream,
       ...openaiBody
@@ -114,6 +115,7 @@ function patchChatCreate({
         prompt: {},
         chatId: ip_chat_id ?? chatId,
         parentEventId: ip_parent_event_id ?? parentEventId,
+        feedbackKey: ip_feedback_key,
         modelParameters: {
           modelProvider: "openai",
           modelType: "chat",
@@ -207,6 +209,7 @@ function patchCompletionCreate({
       ip_template_chat,
       ip_template_params,
       ip_only_named_prompts,
+      ip_feedback_key,
       prompt,
       stream,
       ...openaiBody
@@ -252,6 +255,7 @@ function patchCompletionCreate({
         prompt: {},
         chatId: ip_chat_id ?? chatId,
         parentEventId: ip_parent_event_id ?? parentEventId,
+        feedbackKey: ip_feedback_key,
         modelParameters: {
           modelProvider: "openai",
           modelType: "completion",

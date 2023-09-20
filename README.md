@@ -86,3 +86,5 @@ The following parameters are added to the `create` call:
   placeholders,
 - `ip_parent_event_id`: The UUID of the parent event. All calls with the same
   parent id are grouped as a "Run Group".
+
+- `ip_feedback_key`: The key used to send feedback on the prompt. This should be used in conjunction with the send_feedback

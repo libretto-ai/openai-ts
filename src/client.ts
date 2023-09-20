@@ -26,6 +26,7 @@ export interface EventMetadata {
   chatId?: string;
   parentEventId?: string;
   modelParameters?: ModelParameters;
+  feedbackKey?: string;
 }
 export interface PromptEvent {
   /** From @imaginary-dev/core */
@@ -44,6 +45,7 @@ export async function send_event(event: EventMetadata & PromptEvent) {
   const url =
     process.env.PROMPT_REPORTING_URL ?? "https://app.imaginary.dev/api/event";
   const body = JSON.stringify(event);
+  console.log("sending event", event);
   const response = await fetch(url, {
     method: "POST",
     body,
@@ -67,4 +69,37 @@ async function extractJsonBody(response: Response) {
       `Unparseable response: ${response.status} ${response.statusText} ${e}`
     );
   }
+}
+
+export interface FeedbackBody {
+  /** The feedback_key that was passed to the `event` API. */
+  feedback_key: string;
+  /* A rating from 0 to 1 on the quality of the prompt response */
+  rating?: number;
+  /**
+   * A better response than what the prompt responded with. (e.g. a correction
+   * from a user)
+   */
+  better_response?: string;
+
+  apiKey?: string;
+}
+
+/** Send feedback to the  */
+export async function send_feedback(body: FeedbackBody) {
+  const url =
+    process.env.PROMPT_FEEDBACK_URL ?? "https://app.imaginary.dev/api/feedback";
+  const response = await fetch(url, {
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  const responseJson = await extractJsonBody(response);
+  if (!response.ok) {
+    throw new Error(`Failed to send feedback: ${JSON.stringify(responseJson)}`);
+  }
+
+  return responseJson;
 }

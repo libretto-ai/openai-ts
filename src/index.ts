@@ -12,6 +12,7 @@ declare module "openai/resources/chat/completions" {
     ip_chat_id?: string;
     ip_parent_event_id?: string;
     ip_only_named_prompts?: boolean;
+    ip_feedback_key?: string;
   }
 }
 
@@ -25,5 +26,6 @@ declare module "openai/resources/completions" {
     ip_chat_id?: string;
     ip_parent_event_id?: string;
     ip_only_named_prompts?: boolean;
+    ip_feedback_key?: string;
   }
 }
