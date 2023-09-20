@@ -77,6 +77,8 @@ The following parameters are added to the `create` call:
   you have a mix of prompts you want to track and prompts you don't want to track.
 - `ip_template_chat`: The chat _template_ to record for chat
   requests. This is a list of dictionaries with the following keys:
+- `ip_feedback_key`: The key used to send feedback on the prompt. This should be
+  used in conjunction with the send_feedback.
 
   - `role`: The role of the speaker. Either `"system"`, `"user"` or `"ai"`.
   - `content`: The content of the message. This can be a string or a template string with `{}` placeholders.
@@ -88,3 +90,38 @@ The following parameters are added to the `create` call:
   parent id are grouped as a "Run Group".
 
 - `ip_feedback_key`: The key used to send feedback on the prompt. This should be used in conjunction with the send_feedback
+
+## Sending Feedback
+
+You can send feedback on a prompt by calling `send_feedback()`. This will send a feedback event to Templatest on a prompt that was previously called.
+
+```typescript
+import { patch, send_feedback } from "@imaginary-dev/openai";
+import crypto from "crypto";
+
+async function main() {
+  patch();
+
+  // Must be unique for each call to OpenAI
+  const feedbackKey = `feedback-${crypto.randomUUID()}`;
+  const completion = await openai.chat.completions.create({
+    // ...
+    ip_feedback_key: feedbackKey,
+  });
+
+  const betterAnswer = await askUserForBetterResult(completion.choices[0].text);
+
+  if (betterAnswer) {
+    await send_feedback({
+      apiKey,
+      feedbackKey,
+      // Better answer from the user
+      better_response: betterAnswer,
+      // Rating of existing answer, from 0 to 1
+      rating: 0.2,
+    });
+  }
+}
+```
+
+Note that feedback can include either a rating, a better response, or both.

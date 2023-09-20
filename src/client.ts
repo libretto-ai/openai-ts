@@ -1,6 +1,15 @@
 import { type CompletionCreateParamsNonStreaming } from "openai/resources";
 import { type ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat";
 
+function getUrl(apiName: string, environmentName: string): string {
+  if (process.env[environmentName]) {
+    return process.env[environmentName]!;
+  }
+  const prefix =
+    process.env.PROMPT_API_PREFIX ?? "https://app.imaginary.dev/api";
+  return `${prefix}/${apiName}`;
+}
+
 interface OpenAIChatParameters
   extends Omit<ChatCompletionCreateParamsNonStreaming, "messages"> {
   modelProvider: "openai";
@@ -42,8 +51,7 @@ export interface PromptEvent {
 }
 
 export async function send_event(event: EventMetadata & PromptEvent) {
-  const url =
-    process.env.PROMPT_REPORTING_URL ?? "https://app.imaginary.dev/api/event";
+  const url = getUrl("event", "PROMPT_REPORTING_URL");
   const body = JSON.stringify(event);
   console.log("sending event", event);
   const response = await fetch(url, {
@@ -87,8 +95,7 @@ export interface FeedbackBody {
 
 /** Send feedback to the  */
 export async function send_feedback(body: FeedbackBody) {
-  const url =
-    process.env.PROMPT_FEEDBACK_URL ?? "https://app.imaginary.dev/api/feedback";
+  const url = getUrl("feedback", "PROMPT_FEEDBACK_URL");
   const response = await fetch(url, {
     method: "POST",
     body: JSON.stringify(body),
