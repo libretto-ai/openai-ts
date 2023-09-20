@@ -1,12 +1,12 @@
 {
   "name": "@imaginary-dev/openai",
   "main": "lib/src/index.js",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "types": "lib/src/index.d.ts",
   "scripts": {
     "build": "tsc",
     "prepublish": "npm run build",
-    "prettier": "prettier --write .",
+    "prettier": "prettier .",
     "eslint": "eslint .",
     "eslint:fix": "eslint . --fix",
     "test": "jest"
