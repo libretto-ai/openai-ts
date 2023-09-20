@@ -11,13 +11,13 @@ describe("templating", () => {
       const b = "b";
       const c = "c";
       expect(() => f`${a} ${b} ${c}`.variables).toThrowError(
-        "No inline variables"
+        "No inline variables",
       );
     });
 
     it("Should format to a string", () => {
       expect(f`{a} {b} {c}`.format({ a: "A", b: "B", c: "C" })).toEqual(
-        "A B C"
+        "A B C",
       );
     });
   });
@@ -25,7 +25,7 @@ describe("templating", () => {
   describe("objTemplate", () => {
     it("should extract variables from objects", () => {
       expect(
-        objectTemplate({ a: "A here: {a}", b: "B here: {b}" }).variables
+        objectTemplate({ a: "A here: {a}", b: "B here: {b}" }).variables,
       ).toEqual(["a", "b"]);
     });
 
@@ -35,7 +35,7 @@ describe("templating", () => {
           a: "A here: {a}",
           b: "B here: {b}",
           c: { d: "D here: {d}", e: "E here: {e}" },
-        }).variables
+        }).variables,
       ).toEqual(["a", "b", "d", "e"]);
     });
 
@@ -55,7 +55,7 @@ describe("templating", () => {
           f: null,
           g: undefined,
           h: 1,
-        }).variables
+        }).variables,
       ).toEqual(["a", "b", "d", "e"]);
     });
 
@@ -71,7 +71,12 @@ describe("templating", () => {
             role: "user",
             content: "Where can I eat {food} in {city}?",
           },
-        ]).format({ role: "tourist", quantity: 3, food: "pizza", city: "Rome" })
+        ]).format({
+          role: "tourist",
+          quantity: 3,
+          food: "pizza",
+          city: "Rome",
+        }),
       ).toEqual([
         {
           role: "system",

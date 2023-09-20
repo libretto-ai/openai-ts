@@ -59,12 +59,11 @@ function patchChatCreate({
   const newCreateChat = async function (
     this: typeof OpenAI.Chat.Completions.prototype,
     body,
-    options
+    options,
   ) {
     const now = Date.now();
     const {
       ip_api_key,
-      ip_template_text,
       ip_chat_id,
       ip_parent_event_id,
       ip_prompt_template_name,
@@ -79,7 +78,7 @@ function patchChatCreate({
 
     const { messages: resolvedMessages, template } = getResolvedMessages(
       messages,
-      ip_template_params
+      ip_template_params,
     );
 
     const resultPromise = originalCreateChat.apply(this, [
@@ -99,7 +98,7 @@ function patchChatCreate({
       resultPromise,
       stream,
       feedbackKey,
-      true
+      true,
     );
 
     // note: not awaiting the result of this
@@ -149,7 +148,7 @@ async function getResolvedStream(
   >,
   stream: boolean | null | undefined,
   feedbackKey: string,
-  isChat: boolean
+  isChat: boolean,
 ): Promise<{
   returnValue:
     | Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
@@ -165,7 +164,7 @@ async function getResolvedStream(
     const wrappedStream = new WrappedStream(
       chunkStream as Stream<any>,
       isChat,
-      feedbackKey
+      feedbackKey,
     );
     return {
       returnValue: wrappedStream,
@@ -183,15 +182,15 @@ async function getResolvedStream(
       returnValue: await resultPromise,
       finalResultPromise: Promise.resolve(
         getStaticChatCompletion(
-          staticResult as OpenAI.Chat.Completions.ChatCompletion
-        )
+          staticResult as OpenAI.Chat.Completions.ChatCompletion,
+        ),
       ),
     };
   }
   return {
     returnValue: await resultPromise,
     finalResultPromise: Promise.resolve(
-      getStaticCompletion(staticResult as OpenAI.Completions.Completion)
+      getStaticCompletion(staticResult as OpenAI.Completions.Completion),
     ),
   };
 }
@@ -218,7 +217,7 @@ function patchCompletionCreate({
   const newCreateCompletion = async function (
     this: typeof OpenAI.Completions.prototype,
     body,
-    options
+    options,
   ) {
     const now = Date.now();
     const {
@@ -227,7 +226,6 @@ function patchCompletionCreate({
       ip_chat_id,
       ip_parent_event_id,
       ip_prompt_template_name,
-      ip_template_chat,
       ip_template_params,
       ip_only_named_prompts,
       ip_feedback_key,
@@ -238,7 +236,7 @@ function patchCompletionCreate({
 
     const { prompt: resolvedPrompt, template } = getResolvedPrompt(
       prompt,
-      ip_template_params
+      ip_template_params,
     );
 
     const resultPromise = originalCreateCompletion.apply(this, [
@@ -262,7 +260,7 @@ function patchCompletionCreate({
       resultPromise,
       stream,
       feedbackKey,
-      false
+      false,
     );
     finalResultPromise.then((response) => {
       const responseTime = Date.now() - now;
@@ -294,7 +292,7 @@ function patchCompletionCreate({
 }
 
 function getStaticChatCompletion(
-  result: OpenAI.Chat.Completions.ChatCompletion
+  result: OpenAI.Chat.Completions.ChatCompletion,
 ) {
   if (result.choices[0].message.content) {
     return result.choices[0].message.content;
@@ -314,7 +312,7 @@ function getStaticCompletion(result: OpenAI.Completions.Completion | null) {
 }
 function getResolvedMessages(
   messages: ChatCompletionMessage[] | ObjectTemplate<ChatCompletionMessage[]>,
-  params?: Record<string, any>
+  params?: Record<string, any>,
 ) {
   if ("template" in messages && "format" in messages) {
     if (!params) {
@@ -328,7 +326,7 @@ function getResolvedMessages(
 
 function getResolvedPrompt(
   s: PromptString | ObjectTemplate<string>,
-  params?: Record<string, any>
+  params?: Record<string, any>,
 ) {
   if (typeof s === "string") {
     return { prompt: s, template: null };
@@ -341,7 +339,7 @@ function getResolvedPrompt(
       console.warn(`Cannot use token numbers in prompt arrays`);
     }
     const str = s.join("");
-    return { prompt: s, template: null };
+    return { prompt: str, template: null };
   }
   if (!s) {
     return { prompt: s, template: null };
@@ -359,7 +357,7 @@ function getResolvedPrompt(
 class WrappedStream<
   T extends
     | OpenAI.Chat.Completions.ChatCompletionChunk
-    | OpenAI.Completions.Completion
+    | OpenAI.Completions.Completion,
 > extends Stream<T> {
   finishPromise: Promise<string>;
   private resolveIterator!: (v: string) => void;
@@ -370,7 +368,7 @@ class WrappedStream<
   constructor(
     innerStream: Stream<T>,
     isChat: boolean | undefined,
-    feedbacKey: string
+    feedbacKey: string,
   ) {
     super((innerStream as any).response, (innerStream as any).controller);
     this.isChat = !!isChat;
@@ -393,7 +391,7 @@ class WrappedStream<
             this.accumulatedResult.push(chatItem.choices[0].delta.content);
           } else if (chatItem.choices[0].delta.function_call) {
             this.accumulatedResult.push(
-              JSON.stringify(chatItem.choices[0].delta.function_call)
+              JSON.stringify(chatItem.choices[0].delta.function_call),
             );
           }
         } else {

@@ -44,10 +44,10 @@ export function f(
         .map(
           (s) =>
             // extract the variable name from the template expression
-            templateExpressionVarName.exec(s)?.[1]
+            templateExpressionVarName.exec(s)?.[1],
         )
-        .filter((s): s is string => !!s)
-    )
+        .filter((s): s is string => !!s),
+    ),
   );
   return {
     format(parameters: Record<string, any>) {
@@ -102,7 +102,7 @@ export interface ObjectTemplate<T> {
  * - `template`: The original template object
  * @throws If the template literal contains any inline variables (e.g. `${name}` instead of `{name}`)
  */
-export function objectTemplate<T extends any>(objs: T): ObjectTemplate<T> {
+export function objectTemplate<T>(objs: T): ObjectTemplate<T> {
   const variables = objTemplateVariables(objs);
 
   function format(parameters: Record<string, any>): T {
@@ -122,7 +122,7 @@ export function objectTemplate<T extends any>(objs: T): ObjectTemplate<T> {
           f(key).format(parameters),
           objectTemplate(value).format(parameters),
         ];
-      })
+      }),
     ) as T;
   }
   return {
@@ -143,7 +143,7 @@ function objTemplateVariables(objs: any): readonly string[] {
   if (Array.isArray(objs)) {
     return objs.flatMap((item) => objTemplateVariables(item));
   }
-  return Object.entries(objs).flatMap(([key, value]): readonly string[] => {
+  return Object.entries(objs).flatMap(([, value]): readonly string[] => {
     if (typeof value == "string") {
       return f(value).variables;
     }

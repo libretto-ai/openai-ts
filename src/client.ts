@@ -47,6 +47,7 @@ export interface PromptEvent {
   responseTime?: number;
   /** Included only if there is an error from openai, or error in validation */
   responseErrors?: string[];
+  // eslint-disable-next-line @typescript-eslint/ban-types
   prompt: {}; //hack
 }
 
@@ -74,7 +75,7 @@ async function extractJsonBody(response: Response) {
     return responseJson;
   } catch (e) {
     throw new Error(
-      `Unparseable response: ${response.status} ${response.statusText} ${e}`
+      `Unparseable response: ${response.status} ${response.statusText} ${e}`,
     );
   }
 }

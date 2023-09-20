@@ -1,21 +1,15 @@
 {
-    "compilerOptions": {
-        "lib": [
-            "es2022",
-            "DOM"
-        ],
-        "module": "CommonJS",
-        "moduleResolution": "node",
-        "target": "es2022",
-        "strict": true,
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true,
-        "outDir": "lib",
-        "declaration": true
-    },
-    "include": [
-        "src/**/*",
-        "examples/**/*"
-    ]
+  "compilerOptions": {
+    "lib": ["es2022", "DOM"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "target": "es2022",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "lib",
+    "declaration": true
+  },
+  "include": ["src/**/*", "examples/**/*"]
 }
