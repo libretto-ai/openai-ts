@@ -14,6 +14,13 @@ declare module "openai/resources/chat/completions" {
     ip_only_named_prompts?: boolean;
     ip_feedback_key?: string;
   }
+  interface ChatCompletionChunk {
+    ip_feedback_key?: string;
+  }
+
+  interface ChatCompletion {
+    ip_feedback_key?: string;
+  }
 }
 
 declare module "openai/resources/completions" {
@@ -26,6 +33,10 @@ declare module "openai/resources/completions" {
     ip_chat_id?: string;
     ip_parent_event_id?: string;
     ip_only_named_prompts?: boolean;
+    ip_feedback_key?: string;
+  }
+
+  interface Completion {
     ip_feedback_key?: string;
   }
 }

@@ -94,14 +94,16 @@ function patchChatCreate({
       return resultPromise;
     }
 
-    const { resolvedPromise, returnValue } = await getResolvedStream(
+    const feedbackKey = ip_feedback_key ?? crypto.randomUUID();
+    const { finalResultPromise, returnValue } = await getResolvedStream(
       resultPromise,
       stream,
+      feedbackKey,
       true
     );
 
     // note: not awaiting the result of this
-    resolvedPromise.then((response) => {
+    finalResultPromise.then((response) => {
       const responseTime = Date.now() - now;
       send_event({
         responseTime,
@@ -115,7 +117,7 @@ function patchChatCreate({
         prompt: {},
         chatId: ip_chat_id ?? chatId,
         parentEventId: ip_parent_event_id ?? parentEventId,
-        feedbackKey: ip_feedback_key,
+        feedbackKey,
         modelParameters: {
           modelProvider: "openai",
           modelType: "chat",
@@ -146,6 +148,7 @@ async function getResolvedStream(
     | OpenAI.Completions.Completion
   >,
   stream: boolean | null | undefined,
+  feedbackKey: string,
   isChat: boolean
 ): Promise<{
   returnValue:
@@ -153,25 +156,43 @@ async function getResolvedStream(
     | Stream<OpenAI.Completions.Completion>
     | OpenAI.Chat.Completions.ChatCompletion
     | OpenAI.Completions.Completion;
-  resolvedPromise: Promise<string | null | undefined>;
+  finalResultPromise: Promise<string | null | undefined>;
 }> {
   if (stream) {
     const chunkStream = (await resultPromise) as
       | Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
       | Stream<OpenAI.Completions.Completion>;
-    const wrappedStream = new WrappedStream(chunkStream as Stream<any>, isChat);
-    console.log("gack.");
+    const wrappedStream = new WrappedStream(
+      chunkStream as Stream<any>,
+      isChat,
+      feedbackKey
+    );
     return {
       returnValue: wrappedStream,
-      resolvedPromise: wrappedStream.finishPromise,
+      finalResultPromise: wrappedStream.finishPromise,
     };
     // TODO: deal with streamed completions
   }
-  const staticResult =
-    (await resultPromise) as OpenAI.Chat.Completions.ChatCompletion;
+  const staticResult = (await resultPromise) as
+    | OpenAI.Chat.Completions.ChatCompletion
+    | OpenAI.Completions.Completion;
+  staticResult.ip_feedback_key = feedbackKey;
+
+  if (isChat) {
+    return {
+      returnValue: await resultPromise,
+      finalResultPromise: Promise.resolve(
+        getStaticChatCompletion(
+          staticResult as OpenAI.Chat.Completions.ChatCompletion
+        )
+      ),
+    };
+  }
   return {
     returnValue: await resultPromise,
-    resolvedPromise: Promise.resolve(getStaticChatCompletion(staticResult)),
+    finalResultPromise: Promise.resolve(
+      getStaticCompletion(staticResult as OpenAI.Completions.Completion)
+    ),
   };
 }
 
@@ -235,13 +256,15 @@ function patchCompletionCreate({
     if (ip_only_named_prompts && !resolvedPromptTemplateName) {
       return resultPromise;
     }
+    const feedbackKey = ip_feedback_key ?? crypto.randomUUID();
 
-    const { resolvedPromise, returnValue } = await getResolvedStream(
+    const { finalResultPromise, returnValue } = await getResolvedStream(
       resultPromise,
       stream,
+      feedbackKey,
       false
     );
-    resolvedPromise.then((response) => {
+    finalResultPromise.then((response) => {
       const responseTime = Date.now() - now;
       send_event({
         responseTime,
@@ -255,7 +278,7 @@ function patchCompletionCreate({
         prompt: {},
         chatId: ip_chat_id ?? chatId,
         parentEventId: ip_parent_event_id ?? parentEventId,
-        feedbackKey: ip_feedback_key,
+        feedbackKey,
         modelParameters: {
           modelProvider: "openai",
           modelType: "completion",
@@ -342,11 +365,17 @@ class WrappedStream<
   private resolveIterator!: (v: string) => void;
   private accumulatedResult: string[] = [];
   isChat: boolean;
+  feedbackKey: string;
 
-  constructor(innerStream: Stream<T>, isChat: boolean | undefined) {
+  constructor(
+    innerStream: Stream<T>,
+    isChat: boolean | undefined,
+    feedbacKey: string
+  ) {
     super((innerStream as any).response, (innerStream as any).controller);
     this.isChat = !!isChat;
     this.finishPromise = new Promise((r) => (this.resolveIterator = r));
+    this.feedbackKey = feedbacKey;
   }
 
   async *[Symbol.asyncIterator]() {
@@ -359,6 +388,7 @@ class WrappedStream<
       for await (const item of iterable) {
         if (this.isChat) {
           const chatItem = item as OpenAI.Chat.Completions.ChatCompletionChunk;
+          chatItem.ip_feedback_key = this.feedbackKey;
           if (chatItem.choices[0].delta.content) {
             this.accumulatedResult.push(chatItem.choices[0].delta.content);
           } else if (chatItem.choices[0].delta.function_call) {
@@ -368,6 +398,7 @@ class WrappedStream<
           }
         } else {
           const completionItem = item as OpenAI.Completions.Completion;
+          completionItem.ip_feedback_key = this.feedbackKey;
           this.accumulatedResult.push(completionItem.choices[0].text);
         }
         yield item;
