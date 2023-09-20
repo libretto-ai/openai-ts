@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { OpenAI } from "openai";
 import { APIPromise } from "openai/core";
 import { ChatCompletionMessage } from "openai/resources/chat";
