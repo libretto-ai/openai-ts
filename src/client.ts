@@ -51,7 +51,9 @@ export interface PromptEvent {
   prompt: {}; //hack
 }
 
-export async function send_event(event: EventMetadata & PromptEvent) {
+export type Event = EventMetadata & PromptEvent;
+
+export async function send_event(event: Event) {
   const url = getUrl("event", "PROMPT_REPORTING_URL");
   const body = JSON.stringify(event);
   console.log("sending event", event);
@@ -80,7 +82,7 @@ async function extractJsonBody(response: Response) {
   }
 }
 
-export interface FeedbackBody {
+export interface Feedback {
   /** The feedback_key that was passed to the `event` API. */
   feedback_key: string;
   /* A rating from 0 to 1 on the quality of the prompt response */
@@ -95,7 +97,7 @@ export interface FeedbackBody {
 }
 
 /** Send feedback to the  */
-export async function send_feedback(body: FeedbackBody) {
+export async function send_feedback(body: Feedback) {
   const url = getUrl("feedback", "PROMPT_FEEDBACK_URL");
   const response = await fetch(url, {
     method: "POST",
