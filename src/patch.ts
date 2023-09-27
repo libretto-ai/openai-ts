@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { OpenAI } from "openai";
+import OpenAI from "openai";
 import { APIPromise } from "openai/core";
 import { ChatCompletionMessage } from "openai/resources/chat";
 import { Stream } from "openai/streaming";
@@ -16,6 +16,7 @@ export function patch(params?: OpenAIExtraParams) {
     templateChat,
     templateParams,
     templateText,
+    OpenAI: OpenAIObj = OpenAI,
   } = params ?? {};
   const originalCreateChat = patchChatCreate({
     templateParams,
@@ -24,6 +25,7 @@ export function patch(params?: OpenAIExtraParams) {
     promptTemplateName,
     chatId,
     parentEventId,
+    OpenAIObj,
   });
 
   const originalCreateCompletion = patchCompletionCreate({
@@ -33,11 +35,12 @@ export function patch(params?: OpenAIExtraParams) {
     promptTemplateName,
     chatId,
     parentEventId,
+    OpenAIObj,
   });
 
   return () => {
-    OpenAI.Chat.Completions.prototype.create = originalCreateChat;
-    OpenAI.Completions.prototype.create = originalCreateCompletion;
+    OpenAIObj.Chat.Completions.prototype.create = originalCreateChat;
+    OpenAIObj.Completions.prototype.create = originalCreateCompletion;
   };
 }
 function patchChatCreate({
@@ -47,6 +50,7 @@ function patchChatCreate({
   promptTemplateName,
   chatId,
   parentEventId,
+  OpenAIObj,
 }: {
   templateParams: Record<string, any> | undefined;
   apiKey: string | undefined;
@@ -54,8 +58,9 @@ function patchChatCreate({
   promptTemplateName: string | undefined;
   chatId: string | undefined;
   parentEventId: string | undefined;
+  OpenAIObj: typeof OpenAI;
 }) {
-  const originalCreateChat = OpenAI.Chat.Completions.prototype.create;
+  const originalCreateChat = OpenAIObj.Chat.Completions.prototype.create;
 
   const newCreateChat = async function (
     this: typeof OpenAI.Chat.Completions.prototype,
@@ -128,7 +133,7 @@ function patchChatCreate({
     return returnValue;
   } as typeof originalCreateChat;
 
-  OpenAI.Chat.Completions.prototype.create = newCreateChat;
+  OpenAIObj.Chat.Completions.prototype.create = newCreateChat;
   return originalCreateChat;
 }
 
@@ -205,6 +210,7 @@ function patchCompletionCreate({
   promptTemplateName,
   chatId,
   parentEventId,
+  OpenAIObj,
 }: {
   templateParams: Record<string, any> | undefined;
   apiKey: string | undefined;
@@ -212,8 +218,9 @@ function patchCompletionCreate({
   promptTemplateName: string | undefined;
   chatId: string | undefined;
   parentEventId: string | undefined;
+  OpenAIObj: typeof OpenAI;
 }) {
-  const originalCreateCompletion = OpenAI.Completions.prototype.create;
+  const originalCreateCompletion = OpenAIObj.Completions.prototype.create;
 
   const newCreateCompletion = async function (
     this: typeof OpenAI.Completions.prototype,
@@ -288,7 +295,7 @@ function patchCompletionCreate({
     return returnValue;
   } as typeof originalCreateCompletion;
 
-  OpenAI.Completions.prototype.create = newCreateCompletion;
+  OpenAIObj.Completions.prototype.create = newCreateCompletion;
   return originalCreateCompletion;
 }
 

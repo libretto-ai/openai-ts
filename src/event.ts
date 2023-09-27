@@ -1,3 +1,5 @@
+import OpenAI from "openai";
+
 export interface OpenAIExtraParams {
   apiKey?: string;
   promptTemplateName?: string;
@@ -6,4 +8,5 @@ export interface OpenAIExtraParams {
   templateParams?: Record<string, any>;
   chatId?: string;
   parentEventId?: string;
+  OpenAI?: typeof OpenAI;
 }
