@@ -56,7 +56,6 @@ export type Event = EventMetadata & PromptEvent;
 export async function send_event(event: Event) {
   const url = getUrl("event", "PROMPT_REPORTING_URL");
   const body = JSON.stringify(event);
-  console.log("sending event", event);
   const response = await fetch(url, {
     method: "POST",
     body,
