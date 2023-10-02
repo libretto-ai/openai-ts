@@ -1,11 +1,11 @@
-# im-openai-ts
+# @imaginary-dev/openai
 
 TypeScript wrapper around openai library to send events to templatest
 
 ## Installation
 
 ```bash
-npm install im-openai-ts
+npm install @imaginary-dev/openai
 ```
 
 ## Usage
@@ -15,7 +15,7 @@ To use this library, you need to patch the openai library. This will time calls 
 You'll need an API key from Templatest. Set it in the environment variable `PROMPT_API_KEY` or pass it directly to the `patch()` call. You'll also probably want to name which template you are using.
 
 ```typescript
-import { patch, objectTemplate } from "im-openai-ts";
+import { patch, objectTemplate } from "@imaginary-dev/openai";
 import OpenAI from "openai";
 
 async function main() {
@@ -52,7 +52,7 @@ main();
 You can "unpatch" the library by calling `unpatch()`. This will restore the original `create` method on the `chat.completions` object.
 
 ```typescript
-import { patch, objectTemplate } from "im-openai-ts";
+import { patch, objectTemplate } from "@imaginary-dev/openai";
 
 const unpatch = patch();
 
