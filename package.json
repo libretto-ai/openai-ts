@@ -1,7 +1,7 @@
 {
   "name": "@imaginary-dev/openai",
   "main": "lib/src/index.js",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "types": "lib/src/index.d.ts",
   "scripts": {
     "build": "tsc",

@@ -6,7 +6,7 @@ function getUrl(apiName: string, environmentName: string): string {
     return process.env[environmentName]!;
   }
   const prefix =
-    process.env.PROMPT_API_PREFIX ?? "https://app.imaginary.dev/api";
+    process.env.PROMPT_API_PREFIX ?? "https://app.getlibretto.com/api";
   return `${prefix}/${apiName}`;
 }
 
