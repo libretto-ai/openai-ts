@@ -21,7 +21,7 @@ import OpenAI from "openai";
 async function main() {
   patch({
     apiKey: "XXX", // defaults to process.env.PROMPT_API_KEY
-    // You can set this here for in the `create` call:
+    // You can set this here or in the `create` call:
     // promptTemplateName: "my-template-test"
   });
   const openai = new OpenAI({
@@ -47,7 +47,7 @@ async function main() {
 main();
 ```
 
-#### Advanced Usage
+### Advanced Usage
 
 You can "unpatch" the library by calling `unpatch()`. This will restore the original `create` method on the `chat.completions` object.
 
@@ -63,6 +63,18 @@ try {
 }
 ```
 
+### Configuration
+
+The following options may be passed to `patch`:
+
+- `promptTemplateName`: A default name to associate with prompts. If provided,
+  this is the name that will be associated with any `create` call that's made
+  **without** an `ip_prompt_template_name` parameter.
+- `allowUnnamedPrompts`: When set to `true`, every prompt will be sent to
+  Templatest even if no prompt template name as been provided (either via the
+  `promptTemplateName` option on `patch` or via the `ip_prompt_template_name`
+  parameter added to `create`).
+
 ### Additional Parameters
 
 The following parameters are added to the `create` call:
@@ -73,9 +85,6 @@ The following parameters are added to the `create` call:
   being used in a conversational context, then the same chat id can be
   provided so that the events are grouped together, in order. If not provided,
   this will be left blank.
-- `ip_only_named_prompts`: When passed to `patched_openai()` or `patch_openai()`,
-  this will only send events for prompts that have a name. This is useful if
-  you have a mix of prompts you want to track and prompts you don't want to track.
 - `ip_template_chat`: The chat _template_ to record for chat
   requests. This is a list of dictionaries with the following keys:
   - `role`: The role of the speaker. Either `"system"`, `"user"` or `"ai"`.

@@ -10,12 +10,13 @@ import { ObjectTemplate } from "./template";
 export function patch(params?: OpenAIExtraParams) {
   const {
     apiKey,
-    chatId,
-    parentEventId,
     promptTemplateName,
+    allowUnnamedPrompts,
+    templateText,
     templateChat,
     templateParams,
-    templateText,
+    chatId,
+    parentEventId,
     OpenAI: OpenAIObj = OpenAI,
   } = params ?? {};
   const originalCreateChat = patchChatCreate({
@@ -23,6 +24,7 @@ export function patch(params?: OpenAIExtraParams) {
     apiKey,
     templateChat,
     promptTemplateName,
+    allowUnnamedPrompts,
     chatId,
     parentEventId,
     OpenAIObj,
@@ -33,6 +35,7 @@ export function patch(params?: OpenAIExtraParams) {
     apiKey,
     templateText,
     promptTemplateName,
+    allowUnnamedPrompts,
     chatId,
     parentEventId,
     OpenAIObj,
@@ -48,6 +51,7 @@ function patchChatCreate({
   apiKey,
   templateChat,
   promptTemplateName,
+  allowUnnamedPrompts,
   chatId,
   parentEventId,
   OpenAIObj,
@@ -56,6 +60,7 @@ function patchChatCreate({
   apiKey: string | undefined;
   templateChat: any[] | undefined;
   promptTemplateName: string | undefined;
+  allowUnnamedPrompts: boolean | undefined;
   chatId: string | undefined;
   parentEventId: string | undefined;
   OpenAIObj: typeof OpenAI;
@@ -75,7 +80,6 @@ function patchChatCreate({
       ip_prompt_template_name,
       ip_template_chat,
       ip_template_params,
-      ip_only_named_prompts,
       ip_feedback_key,
       messages,
       stream,
@@ -95,7 +99,7 @@ function patchChatCreate({
     const resolvedPromptTemplateName =
       ip_prompt_template_name ?? promptTemplateName;
 
-    if (ip_only_named_prompts && !resolvedPromptTemplateName) {
+    if (!resolvedPromptTemplateName && !allowUnnamedPrompts) {
       return resultPromise;
     }
 
@@ -208,6 +212,7 @@ function patchCompletionCreate({
   apiKey,
   templateText,
   promptTemplateName,
+  allowUnnamedPrompts,
   chatId,
   parentEventId,
   OpenAIObj,
@@ -216,6 +221,7 @@ function patchCompletionCreate({
   apiKey: string | undefined;
   templateText: string | undefined;
   promptTemplateName: string | undefined;
+  allowUnnamedPrompts: boolean | undefined;
   chatId: string | undefined;
   parentEventId: string | undefined;
   OpenAIObj: typeof OpenAI;
@@ -235,7 +241,6 @@ function patchCompletionCreate({
       ip_parent_event_id,
       ip_prompt_template_name,
       ip_template_params,
-      ip_only_named_prompts,
       ip_feedback_key,
       prompt,
       stream,
@@ -259,9 +264,10 @@ function patchCompletionCreate({
     const resolvedPromptTemplateName =
       ip_prompt_template_name ?? promptTemplateName;
 
-    if (ip_only_named_prompts && !resolvedPromptTemplateName) {
+    if (!resolvedPromptTemplateName && !allowUnnamedPrompts) {
       return resultPromise;
     }
+
     const feedbackKey = ip_feedback_key ?? crypto.randomUUID();
 
     const { finalResultPromise, returnValue } = await getResolvedStream(
