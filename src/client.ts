@@ -54,6 +54,10 @@ export interface PromptEvent {
 export type Event = EventMetadata & PromptEvent;
 
 export async function send_event(event: Event) {
+  if (!event.apiKey) {
+    return;
+  }
+
   const url = getUrl("event", "PROMPT_REPORTING_URL");
   const body = JSON.stringify(event);
   const response = await fetch(url, {
