@@ -23,6 +23,7 @@ async function main() {
     apiKey: "XXX", // defaults to process.env.PROMPT_API_KEY
     // You can set this here or in the `create` call:
     // promptTemplateName: "my-template-test"
+    OpenAI,
   });
   const openai = new OpenAI({
     apiKey: "YYY", // defaults to process.env.OPENAI_API_KEY
@@ -53,8 +54,9 @@ You can "unpatch" the library by calling `unpatch()`. This will restore the orig
 
 ```typescript
 import { patch, objectTemplate } from "@imaginary-dev/openai";
+import OpenAI from "openai";
 
-const unpatch = patch();
+const unpatch = patch({ OpenAI });
 
 try {
     const completion = await openai.chat.completions.create({...});
@@ -118,9 +120,10 @@ feedback to develop new tests and improve your prompts.
 ```typescript
 import { patch, send_feedback } from "@imaginary-dev/openai";
 import crypto from "crypto";
+import OpenAI from "openai";
 
 async function main() {
-  patch();
+  patch({ OpenAI });
 
   // Must be unique for each call to OpenAI
   const completion = await openai.chat.completions.create({
