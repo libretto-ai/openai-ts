@@ -87,24 +87,33 @@ async function extractJsonBody(response: Response) {
 
 export interface Feedback {
   /** The feedback_key that was passed to the `event` API. */
-  feedback_key: string;
+  feedbackKey: string;
   /* A rating from 0 to 1 on the quality of the prompt response */
   rating?: number;
   /**
    * A better response than what the prompt responded with. (e.g. a correction
    * from a user)
    */
-  better_response?: string;
+  betterResponse?: string;
 
   apiKey?: string;
 }
 
 /** Send feedback to the  */
-export async function send_feedback(body: Feedback) {
+export async function sendFeedback(body: Feedback) {
+  // the endpoint expects snake_case variables
+  const snakeCaseBody = Object.fromEntries(
+    Object.entries(body).map(([k, v]) => {
+      if (k === "feedbackKey") return ["feedback_key", v];
+      if (k === "betterResponse") return ["better_response", v];
+      return [k, v];
+    }),
+  );
+
   const url = getUrl("feedback", "PROMPT_FEEDBACK_URL");
   const response = await fetch(url, {
     method: "POST",
-    body: JSON.stringify(body),
+    body: JSON.stringify(snakeCaseBody),
     headers: {
       "Content-Type": "application/json",
     },

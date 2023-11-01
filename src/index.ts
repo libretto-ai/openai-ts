@@ -1,4 +1,4 @@
-export { Event, Feedback, send_event, send_feedback } from "./client";
+export { Event, Feedback, send_event, sendFeedback } from "./client";
 export { patch } from "./patch";
 export { f, objectTemplate } from "./template";
 

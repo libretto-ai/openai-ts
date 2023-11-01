@@ -98,7 +98,7 @@ The following parameters are added to the `create` call:
 - `ip_parent_event_id`: The UUID of the parent event. All calls with the same
   parent id are grouped as a "Run Group".
 - `ip_feedback_key`: The optional key used to send feedback on the prompt, for
-  use with `send_feedback()` later. This is normally auto-generated, and the
+  use with `sendFeedback()` later. This is normally auto-generated, and the
   value is returned in the OpenAI response.
 
 ## Sending Feedback
@@ -112,13 +112,13 @@ able to help you find better responses. There are a few common cases:
 - You might provide a chatbot that answers questions, and the user can rate the  
   answers with a thumbs up (good) or thumbs down (bad).
 
-You can send this feedback to Tepmlatest by calling `send_feedback()`. This will
+You can send this feedback to Tepmlatest by calling `sendFeedback()`. This will
 send a feedback event to Templatest about a prompt that was previously called, and
 let you review this feedback in the Templatest dashboard. You can use this
 feedback to develop new tests and improve your prompts.
 
 ```typescript
-import { patch, send_feedback } from "@imaginary-dev/openai";
+import { patch, sendFeedback } from "@imaginary-dev/openai";
 import crypto from "crypto";
 import OpenAI from "openai";
 
@@ -137,11 +137,11 @@ async function main() {
   if (betterAnswer !== completion.choices[0].text) {
     // feedback key is automatically injected into OpenAI response object.
     const feedbackKey = completion.ip_feedback_key;
-    await send_feedback({
+    await sendFeedback({
       apiKey,
       feedbackKey,
       // Better answer from the user
-      better_response: betterAnswer,
+      betterResponse: betterAnswer,
       // Rating of existing answer, from 0 to 1
       rating: 0.2,
     });
@@ -149,9 +149,9 @@ async function main() {
 }
 ```
 
-Note that feedback can include either `rating`, `better_response`, or both.
+Note that feedback can include either `rating`, `betterResponse`, or both.
 
 Parameters:
 
 - `rating` - a value from 0 (meaning the result was completely wrong) to 1 (meaning the result was correct)
-- `better_response` - the better response from the user
+- `betterResponse` - the better response from the user
