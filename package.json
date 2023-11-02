@@ -29,5 +29,8 @@
   },
   "peerDependencies": {
     "openai": "^4.6.0"
+  },
+  "dependencies": {
+    "redact-pii": "^3.4.0"
   }
 }

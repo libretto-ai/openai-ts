@@ -6,12 +6,14 @@ import { Stream } from "openai/streaming";
 import { send_event } from "./client";
 import { OpenAIExtraParams } from "./event";
 import { ObjectTemplate } from "./template";
+import { PiiRedactor } from "./pii";
 
 export function patch(params?: OpenAIExtraParams) {
   const {
     apiKey,
     promptTemplateName,
     allowUnnamedPrompts,
+    redactPii,
     templateText,
     templateChat,
     templateParams,
@@ -19,12 +21,23 @@ export function patch(params?: OpenAIExtraParams) {
     parentEventId,
     OpenAI: OpenAIObj = OpenAI,
   } = params ?? {};
+
+  const piiRedactor = redactPii ? new PiiRedactor() : null;
+
+  // Warm up the PII redactor because there's a very large runtime cost when it
+  // executes the first time. Specifically, the regex that detects people's names
+  // can take 4+ seconds to run the first time (but it's fast thereafter).
+  if (piiRedactor) {
+    piiRedactor.redact("");
+  }
+
   const originalCreateChat = patchChatCreate({
     templateParams,
     apiKey,
     templateChat,
     promptTemplateName,
     allowUnnamedPrompts,
+    piiRedactor,
     chatId,
     parentEventId,
     OpenAIObj,
@@ -36,6 +49,7 @@ export function patch(params?: OpenAIExtraParams) {
     templateText,
     promptTemplateName,
     allowUnnamedPrompts,
+    piiRedactor,
     chatId,
     parentEventId,
     OpenAIObj,
@@ -52,6 +66,7 @@ function patchChatCreate({
   templateChat,
   promptTemplateName,
   allowUnnamedPrompts,
+  piiRedactor,
   chatId,
   parentEventId,
   OpenAIObj,
@@ -61,6 +76,7 @@ function patchChatCreate({
   templateChat: any[] | undefined;
   promptTemplateName: string | undefined;
   allowUnnamedPrompts: boolean | undefined;
+  piiRedactor: PiiRedactor | null;
   chatId: string | undefined;
   parentEventId: string | undefined;
   OpenAIObj: typeof OpenAI;
@@ -114,10 +130,22 @@ function patchChatCreate({
     // note: not awaiting the result of this
     finalResultPromise.then((response) => {
       const responseTime = Date.now() - now;
+      let params = ip_template_params ?? templateParams ?? {};
+
+      // Redact PII before recording the event
+      if (piiRedactor) {
+        try {
+          response = piiRedactor.redact(response);
+          params = piiRedactor.redact(params);
+        } catch (err) {
+          console.log("Failed to redact PII", err);
+        }
+      }
+
       send_event({
         responseTime,
         response,
-        params: ip_template_params ?? templateParams ?? {},
+        params: params,
         apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
         promptTemplateChat:
           ip_template_chat ?? template ?? templateChat ?? resolvedMessages,
@@ -213,6 +241,7 @@ function patchCompletionCreate({
   templateText,
   promptTemplateName,
   allowUnnamedPrompts,
+  piiRedactor,
   chatId,
   parentEventId,
   OpenAIObj,
@@ -222,6 +251,7 @@ function patchCompletionCreate({
   templateText: string | undefined;
   promptTemplateName: string | undefined;
   allowUnnamedPrompts: boolean | undefined;
+  piiRedactor: PiiRedactor | null;
   chatId: string | undefined;
   parentEventId: string | undefined;
   OpenAIObj: typeof OpenAI;
@@ -278,10 +308,22 @@ function patchCompletionCreate({
     );
     finalResultPromise.then((response) => {
       const responseTime = Date.now() - now;
+      let params = ip_template_params ?? templateParams ?? {};
+
+      // Redact PII before recording the event
+      if (piiRedactor) {
+        try {
+          response = piiRedactor.redact(response);
+          params = piiRedactor.redact(params);
+        } catch (err) {
+          console.log("Failed to redact PII", err);
+        }
+      }
+
       send_event({
         responseTime,
         response,
-        params: ip_template_params ?? templateParams ?? {},
+        params: params,
         apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
         promptTemplateText:
           ip_template_text ?? template ?? templateText ?? resolvedPromptStr,

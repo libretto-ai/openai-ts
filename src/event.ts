@@ -4,6 +4,7 @@ export interface OpenAIExtraParams {
   apiKey?: string;
   promptTemplateName?: string;
   allowUnnamedPrompts?: boolean;
+  redactPii?: boolean;
   templateText?: string;
   templateChat?: any[];
   templateParams?: Record<string, any>;

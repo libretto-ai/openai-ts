@@ -76,6 +76,10 @@ The following options may be passed to `patch`:
   Templatest even if no prompt template name as been provided (either via the
   `promptTemplateName` option on `patch` or via the `ip_prompt_template_name`
   parameter added to `create`).
+- `redactPii`: When `true`, certain personally identifying information (PII)
+  will be attempted to be redacted before being sent to the Templatest backend.
+  See the `pii` package for details about the types of PII being detected/redacted.
+  `false` by default.
 
 ### Additional Parameters
 
