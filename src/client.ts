@@ -38,8 +38,6 @@ export interface EventMetadata {
   feedbackKey?: string;
 }
 export interface PromptEvent {
-  /** From @imaginary-dev/core */
-  /* prompt: ImaginaryFunctionDefinition; */
   params: Record<string, any>;
   /** Included after response */
   response?: string | null;

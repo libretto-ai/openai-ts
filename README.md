@@ -1,11 +1,11 @@
-# @imaginary-dev/openai
+# @libretto/openai
 
 TypeScript wrapper around openai library to send events to templatest
 
 ## Installation
 
 ```bash
-npm install @imaginary-dev/openai
+npm install @libretto/openai
 ```
 
 ## Usage
@@ -15,7 +15,7 @@ To use this library, you need to patch the openai library. This will time calls 
 You'll need an API key from Templatest. Set it in the environment variable `PROMPT_API_KEY` or pass it directly to the `patch()` call. You'll also probably want to name which template you are using.
 
 ```typescript
-import { patch, objectTemplate } from "@imaginary-dev/openai";
+import { patch, objectTemplate } from "@libretto/openai";
 import OpenAI from "openai";
 
 async function main() {
@@ -53,7 +53,7 @@ main();
 You can "unpatch" the library by calling `unpatch()`. This will restore the original `create` method on the `chat.completions` object.
 
 ```typescript
-import { patch, objectTemplate } from "@imaginary-dev/openai";
+import { patch, objectTemplate } from "@libretto/openai";
 import OpenAI from "openai";
 
 const unpatch = patch({ OpenAI });
@@ -122,7 +122,7 @@ let you review this feedback in the Templatest dashboard. You can use this
 feedback to develop new tests and improve your prompts.
 
 ```typescript
-import { patch, sendFeedback } from "@imaginary-dev/openai";
+import { patch, sendFeedback } from "@libretto/openai";
 import crypto from "crypto";
 import OpenAI from "openai";
 
