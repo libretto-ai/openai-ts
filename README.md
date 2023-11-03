@@ -12,7 +12,7 @@ npm install @libretto/openai
 
 To use this library, you need to patch the openai library. This will time calls to OpenAI, and report them to Templatest.
 
-You'll need an API key from Templatest. Set it in the environment variable `PROMPT_API_KEY` or pass it directly to the `patch()` call. You'll also probably want to name which template you are using.
+You'll need an API key from Templatest. Set it in the environment variable `LIBRETTO_API_KEY` or pass it directly to the `patch()` call. You'll also probably want to name which template you are using.
 
 ```typescript
 import { patch, objectTemplate } from "@libretto/openai";
@@ -20,7 +20,7 @@ import OpenAI from "openai";
 
 async function main() {
   patch({
-    apiKey: "XXX", // defaults to process.env.PROMPT_API_KEY
+    apiKey: "XXX", // defaults to process.env.LIBRETTO_API_KEY
     // You can set this here or in the `create` call:
     // promptTemplateName: "my-template-test"
     OpenAI,

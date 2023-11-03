@@ -146,7 +146,7 @@ function patchChatCreate({
         responseTime,
         response,
         params: params,
-        apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
+        apiKey: ip_api_key ?? apiKey ?? process.env.LIBRETTO_API_KEY,
         promptTemplateChat:
           ip_template_chat ?? template ?? templateChat ?? resolvedMessages,
         promptTemplateName: resolvedPromptTemplateName,
@@ -324,7 +324,7 @@ function patchCompletionCreate({
         responseTime,
         response,
         params: params,
-        apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
+        apiKey: ip_api_key ?? apiKey ?? process.env.LIBRETTO_API_KEY,
         promptTemplateText:
           ip_template_text ?? template ?? templateText ?? resolvedPromptStr,
         promptTemplateName: resolvedPromptTemplateName,
