@@ -35,11 +35,13 @@ async function main() {
       { role: "user", content: "Give a hearty welcome to our new user {name}" },
     ]) as any,
     model: "gpt-3.5-turbo",
-    // Uniquely identifies this prompt within your project. Equivalent to
-    // passing `promptTemplateName` to `patch()`.
-    ip_prompt_template_name: "ts-client-test-chat",
-    // The parameters to fill in the template.
-    ip_template_params: { name: "John" },
+    libretto: {
+      // Uniquely identifies this prompt within your project. Equivalent to
+      // passing `promptTemplateName` to `patch()`.
+      promptTemplateName: "ts-client-test-chat",
+      // The parameters to fill in the template.
+      templateParams: { name: "John" },
+    },
   });
 
   console.log(completion.choices);
@@ -71,10 +73,10 @@ The following options may be passed to `patch`:
 
 - `promptTemplateName`: A default name to associate with prompts. If provided,
   this is the name that will be associated with any `create` call that's made
-  **without** an `ip_prompt_template_name` parameter.
+  **without** a `libretto.promptTemplateName` parameter.
 - `allowUnnamedPrompts`: When set to `true`, every prompt will be sent to
   Templatest even if no prompt template name as been provided (either via the
-  `promptTemplateName` option on `patch` or via the `ip_prompt_template_name`
+  `promptTemplateName` option on `patch` or via the `libretto.promptTemplateName`
   parameter added to `create`).
 - `redactPii`: When `true`, certain personally identifying information (PII)
   will be attempted to be redacted before being sent to the Templatest backend.
@@ -83,25 +85,25 @@ The following options may be passed to `patch`:
 
 ### Additional Parameters
 
-The following parameters are added to the `create` call:
+The following parameters can be specified in the `libretto` object that has been
+added to the base OpenAI `create` call interface:
 
-- `ip_template_params`: The parameters to use for template
-  strings. This is a dictionary of key-value pairs.
-- `ip_chat_id`: The id of a "chat session" - if the chat API is
-  being used in a conversational context, then the same chat id can be
-  provided so that the events are grouped together, in order. If not provided,
-  this will be left blank.
-- `ip_template_chat`: The chat _template_ to record for chat
-  requests. This is a list of dictionaries with the following keys:
+- `templateParams`: The parameters to use for template strings. This is a
+  dictionary of key-value pairs.
+- `chatId`: The id of a "chat session" - if the chat API is being used in a
+  conversational context, then the same chat id can be provided so that the
+  events are grouped together, in order. If not provided, this will be left
+  blank.
+- `templateChat`: The chat _template_ to record for chat requests. This is a
+  list of dictionaries with the following keys:
   - `role`: The role of the speaker. Either `"system"`, `"user"` or `"ai"`.
   - `content`: The content of the message. This can be a string or a template
     string with `{}` placeholders.
-- `ip_template_text`: The text template to record for non-chat
-  completion requests. This is a string or a template string with `{}`
-  placeholders,
-- `ip_parent_event_id`: The UUID of the parent event. All calls with the same
+- `templateText`: The text template to record for non-chat completion requests.
+  This is a string or a template string with `{}` placeholders.
+- `parentEventId`: The UUID of the parent event. All calls with the same
   parent id are grouped as a "Run Group".
-- `ip_feedback_key`: The optional key used to send feedback on the prompt, for
+- `feedbackKey`: The optional key used to send feedback on the prompt, for
   use with `sendFeedback()` later. This is normally auto-generated, and the
   value is returned in the OpenAI response.
 
@@ -140,7 +142,7 @@ async function main() {
   // If the user provided a better answer, send feedback to Templatest
   if (betterAnswer !== completion.choices[0].text) {
     // feedback key is automatically injected into OpenAI response object.
-    const feedbackKey = completion.ip_feedback_key;
+    const feedbackKey = completion.libretto.feedbackKey;
     await sendFeedback({
       apiKey,
       feedbackKey,
