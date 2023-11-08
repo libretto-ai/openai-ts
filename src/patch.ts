@@ -89,22 +89,11 @@ function patchChatCreate({
     options,
   ) {
     const now = Date.now();
-    const {
-      ip_api_key,
-      ip_chat_id,
-      ip_parent_event_id,
-      ip_prompt_template_name,
-      ip_template_chat,
-      ip_template_params,
-      ip_feedback_key,
-      messages,
-      stream,
-      ...openaiBody
-    } = body;
+    const { libretto, messages, stream, ...openaiBody } = body;
 
     const { messages: resolvedMessages, template } = getResolvedMessages(
       messages,
-      ip_template_params,
+      libretto?.templateParams,
     );
 
     const resultPromise = originalCreateChat.apply(this, [
@@ -113,13 +102,13 @@ function patchChatCreate({
     ]);
 
     const resolvedPromptTemplateName =
-      ip_prompt_template_name ?? promptTemplateName;
+      libretto?.promptTemplateName ?? promptTemplateName;
 
     if (!resolvedPromptTemplateName && !allowUnnamedPrompts) {
       return resultPromise;
     }
 
-    const feedbackKey = ip_feedback_key ?? crypto.randomUUID();
+    const feedbackKey = libretto?.feedbackKey ?? crypto.randomUUID();
     const { finalResultPromise, returnValue } = await getResolvedStream(
       resultPromise,
       stream,
@@ -130,7 +119,7 @@ function patchChatCreate({
     // note: not awaiting the result of this
     finalResultPromise.then((response) => {
       const responseTime = Date.now() - now;
-      let params = ip_template_params ?? templateParams ?? {};
+      let params = libretto?.templateParams ?? templateParams ?? {};
 
       // Redact PII before recording the event
       if (piiRedactor) {
@@ -146,14 +135,17 @@ function patchChatCreate({
         responseTime,
         response,
         params: params,
-        apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
+        apiKey: libretto?.apiKey ?? apiKey ?? process.env.LIBRETTO_API_KEY,
         promptTemplateChat:
-          ip_template_chat ?? template ?? templateChat ?? resolvedMessages,
+          libretto?.templateChat ??
+          template ??
+          templateChat ??
+          resolvedMessages,
         promptTemplateName: resolvedPromptTemplateName,
-        apiName: ip_prompt_template_name ?? promptTemplateName,
+        apiName: libretto?.promptTemplateName ?? promptTemplateName,
         prompt: {},
-        chatId: ip_chat_id ?? chatId,
-        parentEventId: ip_parent_event_id ?? parentEventId,
+        chatId: libretto?.chatId ?? chatId,
+        parentEventId: libretto?.parentEventId ?? parentEventId,
         feedbackKey,
         modelParameters: {
           modelProvider: "openai",
@@ -213,7 +205,10 @@ async function getResolvedStream(
   const staticResult = (await resultPromise) as
     | OpenAI.Chat.Completions.ChatCompletion
     | OpenAI.Completions.Completion;
-  staticResult.ip_feedback_key = feedbackKey;
+  if (!staticResult.libretto) {
+    staticResult.libretto = {};
+  }
+  staticResult.libretto.feedbackKey = feedbackKey;
 
   if (isChat) {
     return {
@@ -264,22 +259,11 @@ function patchCompletionCreate({
     options,
   ) {
     const now = Date.now();
-    const {
-      ip_api_key,
-      ip_template_text,
-      ip_chat_id,
-      ip_parent_event_id,
-      ip_prompt_template_name,
-      ip_template_params,
-      ip_feedback_key,
-      prompt,
-      stream,
-      ...openaiBody
-    } = body;
+    const { libretto, prompt, stream, ...openaiBody } = body;
 
     const { prompt: resolvedPrompt, template } = getResolvedPrompt(
       prompt,
-      ip_template_params,
+      libretto?.templateParams,
     );
 
     const resultPromise = originalCreateCompletion.apply(this, [
@@ -292,13 +276,13 @@ function patchCompletionCreate({
       : resolvedPrompt;
 
     const resolvedPromptTemplateName =
-      ip_prompt_template_name ?? promptTemplateName;
+      libretto?.promptTemplateName ?? promptTemplateName;
 
     if (!resolvedPromptTemplateName && !allowUnnamedPrompts) {
       return resultPromise;
     }
 
-    const feedbackKey = ip_feedback_key ?? crypto.randomUUID();
+    const feedbackKey = libretto?.feedbackKey ?? crypto.randomUUID();
 
     const { finalResultPromise, returnValue } = await getResolvedStream(
       resultPromise,
@@ -308,7 +292,7 @@ function patchCompletionCreate({
     );
     finalResultPromise.then((response) => {
       const responseTime = Date.now() - now;
-      let params = ip_template_params ?? templateParams ?? {};
+      let params = libretto?.templateParams ?? templateParams ?? {};
 
       // Redact PII before recording the event
       if (piiRedactor) {
@@ -324,14 +308,17 @@ function patchCompletionCreate({
         responseTime,
         response,
         params: params,
-        apiKey: ip_api_key ?? apiKey ?? process.env.PROMPT_API_KEY,
+        apiKey: libretto?.apiKey ?? apiKey ?? process.env.LIBRETTO_API_KEY,
         promptTemplateText:
-          ip_template_text ?? template ?? templateText ?? resolvedPromptStr,
+          libretto?.templateText ??
+          template ??
+          templateText ??
+          resolvedPromptStr,
         promptTemplateName: resolvedPromptTemplateName,
-        apiName: ip_prompt_template_name ?? promptTemplateName,
+        apiName: libretto?.promptTemplateName ?? promptTemplateName,
         prompt: {},
-        chatId: ip_chat_id ?? chatId,
-        parentEventId: ip_parent_event_id ?? parentEventId,
+        chatId: libretto?.chatId ?? chatId,
+        parentEventId: libretto?.parentEventId ?? parentEventId,
         feedbackKey,
         modelParameters: {
           modelProvider: "openai",
@@ -442,7 +429,10 @@ class WrappedStream<
       for await (const item of iterable) {
         if (this.isChat) {
           const chatItem = item as OpenAI.Chat.Completions.ChatCompletionChunk;
-          chatItem.ip_feedback_key = this.feedbackKey;
+          if (!chatItem.libretto) {
+            chatItem.libretto = {};
+          }
+          chatItem.libretto.feedbackKey = this.feedbackKey;
           if (chatItem.choices[0].delta.content) {
             this.accumulatedResult.push(chatItem.choices[0].delta.content);
           } else if (chatItem.choices[0].delta.function_call) {
@@ -452,7 +442,10 @@ class WrappedStream<
           }
         } else {
           const completionItem = item as OpenAI.Completions.Completion;
-          completionItem.ip_feedback_key = this.feedbackKey;
+          if (!completionItem.libretto) {
+            completionItem.libretto = {};
+          }
+          completionItem.libretto.feedbackKey = this.feedbackKey;
           this.accumulatedResult.push(completionItem.choices[0].text);
         }
         yield item;

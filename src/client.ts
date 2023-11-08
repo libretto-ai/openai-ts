@@ -6,7 +6,7 @@ function getUrl(apiName: string, environmentName: string): string {
     return process.env[environmentName]!;
   }
   const prefix =
-    process.env.PROMPT_API_PREFIX ?? "https://app.getlibretto.com/api";
+    process.env.LIBRETTO_API_PREFIX ?? "https://app.getlibretto.com/api";
   return `${prefix}/${apiName}`;
 }
 
@@ -38,8 +38,6 @@ export interface EventMetadata {
   feedbackKey?: string;
 }
 export interface PromptEvent {
-  /** From @imaginary-dev/core */
-  /* prompt: ImaginaryFunctionDefinition; */
   params: Record<string, any>;
   /** Included after response */
   response?: string | null;
@@ -58,7 +56,7 @@ export async function send_event(event: Event) {
     return;
   }
 
-  const url = getUrl("event", "PROMPT_REPORTING_URL");
+  const url = getUrl("event", "LIBRETTO_REPORTING_URL");
   const body = JSON.stringify(event);
   const response = await fetch(url, {
     method: "POST",
@@ -110,7 +108,7 @@ export async function sendFeedback(body: Feedback) {
     }),
   );
 
-  const url = getUrl("feedback", "PROMPT_FEEDBACK_URL");
+  const url = getUrl("feedback", "LIBRETTO_FEEDBACK_URL");
   const response = await fetch(url, {
     method: "POST",
     body: JSON.stringify(snakeCaseBody),

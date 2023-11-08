@@ -15,9 +15,10 @@ async function main() {
       { role: "user", content: "Say this is a test to {name}" },
     ]) as any,
     model: "gpt-3.5-turbo",
-    ip_api_key: "619dd081-2f72-4eb1-9f90-3d3c3772334d",
-    ip_prompt_template_name: "ts-client-test-chat",
-    ip_template_params: { name: "John" },
+    libretto: {
+      promptTemplateName: "ts-client-test-chat",
+      templateParams: { name: "John" },
+    },
   });
   console.log("Chat API replied with: ", completion.choices);
 
@@ -25,9 +26,10 @@ async function main() {
   const completion2P = openai.completions.create({
     prompt: f`Say this is a test to {name}` as unknown as string,
     model: "text-davinci-003",
-    ip_api_key: "619dd081-2f72-4eb1-9f90-3d3c3772334d",
-    ip_prompt_template_name: "ts-client-test-completion",
-    ip_template_params: { name: "John" },
+    libretto: {
+      promptTemplateName: "ts-client-test-completion",
+      templateParams: { name: "John" },
+    },
   });
   console.log("awaiting result...");
   const completion2 = await completion2P;

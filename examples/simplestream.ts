@@ -16,10 +16,11 @@ async function main() {
     ]) as any,
     model: "gpt-3.5-turbo",
     stream: true,
-    ip_api_key: "619dd081-2f72-4eb1-9f90-3d3c3772334d",
-    ip_prompt_template_name: "ts-client-test-chat",
-    ip_template_params: { name: "John" },
-    ip_feedback_key: crypto.randomUUID(),
+    libretto: {
+      promptTemplateName: "ts-client-test-chat",
+      templateParams: { name: "John" },
+      feedbackKey: crypto.randomUUID(),
+    },
   });
   for await (const result of completion) {
     console.log("Streamed Chat API replied with: ", result.choices);
@@ -29,10 +30,11 @@ async function main() {
     prompt: f`Tell a 20 word story about {name}` as unknown as string,
     model: "davinci",
     stream: true,
-    ip_api_key: "619dd081-2f72-4eb1-9f90-3d3c3772334d",
-    ip_prompt_template_name: "ts-client-test-chat",
-    ip_template_params: { name: "John" },
-    ip_feedback_key: crypto.randomUUID(),
+    libretto: {
+      promptTemplateName: "ts-client-test-chat",
+      templateParams: { name: "John" },
+      feedbackKey: crypto.randomUUID(),
+    },
   });
   for await (const result of completion2) {
     console.log("Streamed Completion API replied with: ", result);
