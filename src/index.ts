@@ -4,6 +4,14 @@ export { Event, Feedback, send_event, sendFeedback } from "./session";
 export { patch } from "./patch";
 export { f, objectTemplate } from "./template";
 
+export type LibrettoConfig = {
+  apiKey?: string;
+  promptTemplateName?: string;
+  allowUnnamedPrompts?: boolean;
+  redactPii?: boolean;
+  chatId?: string;
+};
+
 type LibrettoCreateParams = {
   apiKey?: string;
   promptTemplateName?: string;
@@ -18,6 +26,12 @@ type LibrettoCreateParams = {
 type LibrettoCompletion = {
   feedbackKey?: string;
 };
+
+declare module "openai" {
+  interface ClientOptions {
+    libretto?: LibrettoConfig;
+  }
+}
 
 declare module "openai/resources/chat/completions" {
   interface ChatCompletionCreateParamsBase {

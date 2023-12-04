@@ -169,7 +169,7 @@ function patchChatCreate({
  *    response is streamed, this promise doesn't resolve until the stream is
  *    finished.
  */
-async function getResolvedStream(
+export async function getResolvedStream(
   resultPromise: APIPromise<
     | Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
     | Stream<OpenAI.Completions.Completion>
@@ -353,7 +353,7 @@ function getStaticCompletion(result: OpenAI.Completions.Completion | null) {
     return result.choices[0].text;
   }
 }
-function getResolvedMessages(
+export function getResolvedMessages(
   messages: ChatCompletionMessage[] | ObjectTemplate<ChatCompletionMessage[]>,
   params?: Record<string, any>,
 ) {
@@ -367,7 +367,7 @@ function getResolvedMessages(
   return { messages, template: null };
 }
 
-function getResolvedPrompt(
+export function getResolvedPrompt(
   s: PromptString | ObjectTemplate<string>,
   params?: Record<string, any>,
 ) {
