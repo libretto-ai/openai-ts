@@ -1,7 +1,7 @@
 import { ChatCompletionMessage } from "openai/resources/chat";
 
-export { Event, Feedback, send_event, sendFeedback } from "./session";
-export { patch } from "./patch";
+export { Event, Feedback, sendFeedback, send_event } from "./session";
+export { OpenAI } from "./client";
 export { f, objectTemplate } from "./template";
 
 export type LibrettoConfig = {
