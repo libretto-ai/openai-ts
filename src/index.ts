@@ -1,6 +1,6 @@
 import { ChatCompletionMessage } from "openai/resources/chat";
 
-export { Event, Feedback, send_event, sendFeedback } from "./client";
+export { Event, Feedback, send_event, sendFeedback } from "./session";
 export { patch } from "./patch";
 export { f, objectTemplate } from "./template";
 

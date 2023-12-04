@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import { APIPromise } from "openai/core";
 import { ChatCompletionMessage } from "openai/resources/chat";
 import { Stream } from "openai/streaming";
-import { send_event } from "./client";
+import { send_event } from "./session";
 import { OpenAIExtraParams } from "./event";
 import { ObjectTemplate } from "./template";
 import { PiiRedactor } from "./pii";
