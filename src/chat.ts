@@ -13,7 +13,7 @@ import {
 } from "openai/resources/chat/completions";
 import { Stream } from "openai/streaming";
 import { LibrettoConfig, send_event } from ".";
-import { getResolvedMessages, getResolvedStream } from "./patch";
+import { getResolvedMessages, getResolvedStream } from "./resolvers";
 import { PiiRedactor } from "./pii";
 
 export class LibrettoChat extends Chat {

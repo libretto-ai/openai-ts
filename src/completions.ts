@@ -11,7 +11,7 @@ import {
 } from "openai/resources/completions";
 import { Stream } from "openai/streaming";
 import { LibrettoConfig, send_event } from ".";
-import { getResolvedPrompt, getResolvedStream } from "./patch";
+import { getResolvedPrompt, getResolvedStream } from "./resolvers";
 import { PiiRedactor } from "./pii";
 
 export class LibrettoCompletions extends Completions {
