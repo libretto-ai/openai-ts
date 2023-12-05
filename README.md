@@ -1,6 +1,6 @@
 # @libretto/openai
 
-TypeScript wrapper around openai library to send events to Libretto
+A drop-in replacement of the official `OpenAI` client for sending events to Libretto.
 
 ## Installation
 
@@ -8,25 +8,32 @@ TypeScript wrapper around openai library to send events to Libretto
 npm install @libretto/openai
 ```
 
+## Get Started
+
+To send events to Libretto, you'll need to create a project. From the project you'll need two things:
+
+1. **API key**: (`apiKey`) This is generated for the project and is used to identify the project and environment (dev, staging, prod) that the event is coming from.
+2. **Template Name**: (`promptTemplateName`) This uniquely identifies a particular prompt that you are using and allows projects to have multiple prompts. This can be in any format but we recommend using a dash-separated format, e.g. `my-prompt-name`.
+
+**Note:** Prompt template names can be auto-generated if the `allowUnnamedPrompts` configuration option is set (see [below](#configuration)). However, if you rely on auto-generated names, new revisions of the same prompt will show up as different prompt templates in Libretto.
+
 ## Usage
 
-To use this library, you need to patch the openai library. This will time calls to OpenAI, and report them to Libretto.
+You can use the `OpenAI` client provided by `@libretto/openai` anywhere that you're currently using the official client.
 
-You'll need an API key from Libretto. Set it in the environment variable `LIBRETTO_API_KEY` or pass it directly to the `patch()` call. You'll also probably want to name which template you are using.
+When instantiating the client, you can/should provide any of the standard `OpenAI` parameters in the constructor. Libretto-specific configuration can be provided via an additional `libretto` argument (see below).
+
+To allow our tools to separate the "prompt" from the "prompt parameters", use the included `objectTemplate` helper and pass the parameters separately as follows:
 
 ```typescript
-import { patch, objectTemplate } from "@libretto/openai";
-import OpenAI from "openai";
+import { OpenAI, objectTemplate } from "@libretto/openai";
 
 async function main() {
-  patch({
-    apiKey: "XXX", // defaults to process.env.LIBRETTO_API_KEY
-    // You can set this here or in the `create` call:
-    // promptTemplateName: "my-template-test"
-    OpenAI,
-  });
   const openai = new OpenAI({
-    apiKey: "YYY", // defaults to process.env.OPENAI_API_KEY
+    apiKey: "<OpenAI API Key>", // defaults to process.env.OPENAI_API_KEY
+    libretto: {
+      apiKey: "<Libretto API Key>", // defaults to process.env.LIBRETTO_API_KEY
+    },
   });
 
   const completion = await openai.chat.completions.create({
@@ -48,23 +55,6 @@ async function main() {
 }
 
 main();
-```
-
-### Advanced Usage
-
-You can "unpatch" the library by calling `unpatch()`. This will restore the original `create` method on the `chat.completions` object.
-
-```typescript
-import { patch, objectTemplate } from "@libretto/openai";
-import OpenAI from "openai";
-
-const unpatch = patch({ OpenAI });
-
-try {
-    const completion = await openai.chat.completions.create({...});
-} finally {
-    unpatch();
-}
 ```
 
 ### Configuration
@@ -124,12 +114,11 @@ let you review this feedback in the Libretto dashboard. You can use this
 feedback to develop new tests and improve your prompts.
 
 ```typescript
-import { patch, sendFeedback } from "@libretto/openai";
 import crypto from "crypto";
-import OpenAI from "openai";
+import { OpenAI, sendFeedback } from "@libretto/openai";
 
 async function main() {
-  patch({ OpenAI });
+  const openai = new OpenAI();
 
   // Must be unique for each call to OpenAI
   const completion = await openai.chat.completions.create({
