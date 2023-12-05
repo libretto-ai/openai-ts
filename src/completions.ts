@@ -78,14 +78,15 @@ export class LibrettoCompletions extends Completions {
     }
 
     const feedbackKey = libretto?.feedbackKey ?? crypto.randomUUID();
-
     const { finalResultPromise, returnValue } = await getResolvedStream(
       resultPromise,
       stream,
       feedbackKey,
       false,
     );
-    finalResultPromise.then((response) => {
+
+    // note: not awaiting the result of this
+    finalResultPromise.then(async (response) => {
       const responseTime = Date.now() - now;
       let params = libretto?.templateParams ?? {};
 
@@ -99,7 +100,7 @@ export class LibrettoCompletions extends Completions {
         }
       }
 
-      send_event({
+      await send_event({
         responseTime,
         response,
         params: params,

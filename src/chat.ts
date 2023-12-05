@@ -94,7 +94,7 @@ class LibrettoChatCompletions extends Completions {
     );
 
     // note: not awaiting the result of this
-    finalResultPromise.then((response) => {
+    finalResultPromise.then(async (response) => {
       const responseTime = Date.now() - now;
       let params = libretto?.templateParams ?? {};
 
@@ -108,7 +108,7 @@ class LibrettoChatCompletions extends Completions {
         }
       }
 
-      send_event({
+      await send_event({
         responseTime,
         response,
         params: params,
