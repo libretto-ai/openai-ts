@@ -1,10 +1,8 @@
 import crypto from "crypto";
-import OpenAI from "openai";
 import { f, objectTemplate } from "../src";
-import { patch } from "../src/patch";
+import { OpenAI } from "../src/client";
 
 async function main() {
-  patch();
   const openai = new OpenAI({
     // apiKey: process.env.OPENAI_API_KEY
   });
