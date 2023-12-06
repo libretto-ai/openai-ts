@@ -31,6 +31,6 @@
     "openai": "^4.6.0"
   },
   "dependencies": {
-    "redact-pii": "^3.4.0"
+    "redact-pii-light": "^1.0.0"
   }
 }
