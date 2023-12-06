@@ -4,10 +4,10 @@ import { LibrettoCompletions } from "./completions";
 import { LibrettoChat } from "./chat";
 
 export class OpenAI extends _OpenAI {
-  constructor(opts: ClientOptions) {
+  constructor(opts?: ClientOptions) {
     super(opts);
 
-    this.completions = new LibrettoCompletions(this, opts.libretto ?? {});
-    this.chat = new LibrettoChat(this, opts.libretto ?? {});
+    this.completions = new LibrettoCompletions(this, opts?.libretto ?? {});
+    this.chat = new LibrettoChat(this, opts?.libretto ?? {});
   }
 }
