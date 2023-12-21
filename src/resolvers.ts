@@ -111,6 +111,7 @@ function resolveFunctionCall(
     return {
       name: call.name,
       arguments: call.arguments,
+      error: "invalid_json",
     };
   }
 }
