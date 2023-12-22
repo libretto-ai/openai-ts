@@ -66,7 +66,7 @@ class LibrettoChatCompletions extends Completions {
     options?: Core.RequestOptions,
   ): Promise<ChatCompletion | Stream<ChatCompletionChunk>> {
     const now = Date.now();
-    const { libretto, messages, stream, ...openaiBody } = body;
+    const { libretto, messages, stream, tools, ...openaiBody } = body;
 
     const { messages: resolvedMessages, template } = getResolvedMessages(
       messages,
@@ -74,7 +74,7 @@ class LibrettoChatCompletions extends Completions {
     );
 
     const resultPromise = super.create(
-      { ...openaiBody, messages: resolvedMessages, stream },
+      { ...openaiBody, messages: resolvedMessages, tools: tools, stream },
       options,
     );
 
@@ -129,6 +129,7 @@ class LibrettoChatCompletions extends Completions {
           modelType: "chat",
           ...openaiBody,
         },
+        tools: tools,
       });
     });
     return returnValue as ChatCompletion | Stream<ChatCompletionChunk>;
