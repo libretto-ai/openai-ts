@@ -43,8 +43,7 @@ async function main() {
     ]) as any,
     model: "gpt-3.5-turbo",
     libretto: {
-      // Uniquely identifies this prompt within your project. Equivalent to
-      // passing `promptTemplateName` to `patch()`.
+      // Uniquely identifies this prompt within your project.
       promptTemplateName: "ts-client-test-chat",
       // The parameters to fill in the template.
       templateParams: { name: "John" },
@@ -59,14 +58,14 @@ main();
 
 ### Configuration
 
-The following options may be passed to `patch`:
+The following options may be set in the `libretto` object that has been added to the OpenAI client constructor:
 
 - `promptTemplateName`: A default name to associate with prompts. If provided,
   this is the name that will be associated with any `create` call that's made
   **without** a `libretto.promptTemplateName` parameter.
 - `allowUnnamedPrompts`: When set to `true`, every prompt will be sent to
   Libretto even if no prompt template name as been provided (either via the
-  `promptTemplateName` option on `patch` or via the `libretto.promptTemplateName`
+  `promptTemplateName` option here or via the `libretto.promptTemplateName`
   parameter added to `create`).
 - `redactPii`: When `true`, certain personally identifying information (PII)
   will be attempted to be redacted before being sent to the Libretto backend.
