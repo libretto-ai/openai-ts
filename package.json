@@ -28,7 +28,7 @@
     "typescript": "^5.3.2"
   },
   "peerDependencies": {
-    "openai": "^4.21.0"
+    "openai": "^4.24.1"
   },
   "dependencies": {
     "redact-pii-light": "^1.0.0"
