@@ -1,10 +1,6 @@
 import OpenAI from "openai";
 import { APIPromise } from "openai/core";
-import {
-  ChatCompletionMessage,
-  ChatCompletionMessageParam,
-  ChatCompletionMessageToolCall,
-} from "openai/resources/chat";
+import { ChatCompletionMessageParam } from "openai/resources/chat";
 import { Stream } from "openai/streaming";
 import { ObjectTemplate } from "./template";
 
@@ -85,47 +81,14 @@ function getStaticChatCompletion(
   }
   if (result.choices[0].message.function_call) {
     return JSON.stringify({
-      function_call: resolveFunctionCall(
-        result.choices[0].message.function_call,
-      ),
+      function_call: result.choices[0].message.function_call,
     });
   }
   if (result.choices[0].message.tool_calls) {
     return JSON.stringify({
-      tool_calls: resolveToolCalls(result.choices[0].message.tool_calls),
+      tool_calls: result.choices[0].message.tool_calls,
     });
   }
-}
-
-function resolveFunctionCall(
-  call:
-    | ChatCompletionMessageToolCall.Function
-    | ChatCompletionMessage.FunctionCall,
-) {
-  try {
-    return {
-      name: call.name,
-      arguments: JSON.parse(call.arguments),
-    };
-  } catch {
-    return {
-      name: call.name,
-      arguments: call.arguments,
-      error: "invalid_json",
-    };
-  }
-}
-
-function resolveToolCalls(calls: ChatCompletionMessageToolCall[]) {
-  return calls.map((call) => {
-    if (call.type === "function") {
-      return {
-        type: call.type,
-        function: resolveFunctionCall(call.function),
-      };
-    }
-    return call;
-  });
 }
 
 function getStaticCompletion(result: OpenAI.Completions.Completion | null) {
