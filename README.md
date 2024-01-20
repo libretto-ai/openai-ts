@@ -107,10 +107,10 @@ able to help you find better responses. There are a few common cases:
 - You might provide a chatbot that answers questions, and the user can rate the  
   answers with a thumbs up (good) or thumbs down (bad).
 
-You can send this feedback to Tepmlatest by calling `sendFeedback()`. This will
-send a feedback event to Libretto about a prompt that was previously called, and
-let you review this feedback in the Libretto dashboard. You can use this
-feedback to develop new tests and improve your prompts.
+You can send this feedback to Libretto by calling `sendFeedback()`. This will
+send feedback about a prompt that was previously called, and let you review
+this feedback in the Libretto dashboard. You can use the feedback to develop new
+tests and improve your prompts.
 
 ```typescript
 import crypto from "crypto";
@@ -130,9 +130,9 @@ async function main() {
   // If the user provided a better answer, send feedback to Libretto
   if (betterAnswer !== completion.choices[0].text) {
     // feedback key is automatically injected into OpenAI response object.
-    const feedbackKey = completion.libretto.feedbackKey;
+    const feedbackKey = completion.libretto?.feedbackKey;
     await sendFeedback({
-      apiKey,
+      apiKey: "<Libretto API Key>", // defaults to process.env.LIBRETTO_API_KEY
       feedbackKey,
       // Better answer from the user
       betterResponse: betterAnswer,

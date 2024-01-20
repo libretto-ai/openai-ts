@@ -86,7 +86,7 @@ async function extractJsonBody(response: Response) {
 
 export interface Feedback {
   /** The feedback_key that was passed to the `event` API. */
-  feedbackKey: string;
+  feedbackKey?: string;
   /* A rating from 0 to 1 on the quality of the prompt response */
   rating?: number;
   /**
@@ -100,6 +100,17 @@ export interface Feedback {
 
 /** Send feedback to the  */
 export async function sendFeedback(body: Feedback) {
+  if (!body.feedbackKey) {
+    console.log("Could not send feedback to Libretto: missing feedback key");
+    return;
+  }
+
+  body.apiKey = body.apiKey ?? process.env.LIBRETTO_API_KEY;
+  if (!body.apiKey) {
+    console.log("Could not send feedback to Libretto: missing API key");
+    return;
+  }
+
   // the endpoint expects snake_case variables
   const snakeCaseBody = Object.fromEntries(
     Object.entries(body).map(([k, v]) => {
