@@ -47,7 +47,7 @@ async function main() {
       promptTemplateName: "ts-client-test-chat",
       // The parameters to fill in the template.
       templateParams: { name: "John" },
-      //optional: metadata for passing custom tracking information
+      //optional: key/value for passing any additional information for tracing
       metadata: { someKey: "somevalue" },
     },
   });
