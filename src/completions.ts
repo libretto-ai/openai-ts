@@ -116,7 +116,7 @@ export class LibrettoCompletions extends Completions {
         chatId: libretto?.chatId ?? this.config.chatId,
         parentEventId: libretto?.parentEventId,
         feedbackKey,
-        metadata: libretto?.metadata,
+        context: libretto?.context,
         modelParameters: {
           modelProvider: "openai",
           modelType: "completion",
