@@ -119,13 +119,13 @@ export interface Feedback {
 /** Send feedback to the  */
 export async function sendFeedback(body: Feedback) {
   if (!body.feedbackKey) {
-    console.log("Could not send feedback to Libretto: missing feedback key");
+    console.warn("Could not send feedback to Libretto: missing feedback key");
     return;
   }
 
   body.apiKey = body.apiKey ?? process.env.LIBRETTO_API_KEY;
   if (!body.apiKey) {
-    console.log("Could not send feedback to Libretto: missing API key");
+    console.warn("Could not send feedback to Libretto: missing API key");
     return;
   }
 
