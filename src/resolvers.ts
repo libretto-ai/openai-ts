@@ -28,7 +28,7 @@ export async function getResolvedStream(
     | Stream<OpenAI.Completions.Completion>
     | OpenAI.Chat.Completions.ChatCompletion
     | OpenAI.Completions.Completion;
-  finalResultPromise: Promise<string | null | undefined>;
+  finalResultPromise: Promise<{ response: string | null | undefined }>;
 }> {
   if (stream) {
     const chunkStream = (await resultPromise) as
@@ -77,27 +77,33 @@ function getStaticChatCompletion(
   result: OpenAI.Chat.Completions.ChatCompletion,
 ) {
   if (result.choices[0].message.content) {
-    return result.choices[0].message.content;
+    return { response: result.choices[0].message.content };
   }
   if (result.choices[0].message.function_call) {
-    return JSON.stringify({
-      function_call: result.choices[0].message.function_call,
-    });
+    return {
+      response: JSON.stringify({
+        function_call: result.choices[0].message.function_call,
+      }),
+    };
   }
   if (result.choices[0].message.tool_calls) {
-    return JSON.stringify({
-      tool_calls: result.choices[0].message.tool_calls,
-    });
+    return {
+      response: JSON.stringify({
+        tool_calls: result.choices[0].message.tool_calls,
+      }),
+    };
   }
+  return { response: undefined };
 }
 
 function getStaticCompletion(result: OpenAI.Completions.Completion | null) {
   if (!result) {
-    return null;
+    return { response: null };
   }
   if (result.choices[0].text) {
-    return result.choices[0].text;
+    return { response: result.choices[0].text };
   }
+  return { response: undefined };
 }
 export function getResolvedMessages(
   messages:
@@ -150,9 +156,10 @@ class WrappedStream<
     | OpenAI.Chat.Completions.ChatCompletionChunk
     | OpenAI.Completions.Completion,
 > extends Stream<T> {
-  finishPromise: Promise<string>;
-  private resolveIterator!: (v: string) => void;
+  finishPromise: Promise<{ response: string }>;
+  private resolveIterator!: (v: { response: string }) => void;
   private accumulatedResult: string[] = [];
+  private responseParameters: any;
   isChat: boolean;
   feedbackKey: string;
 
@@ -199,7 +206,7 @@ class WrappedStream<
         yield item;
       }
     } finally {
-      this.resolveIterator(this.accumulatedResult.join(""));
+      this.resolveIterator({ response: this.accumulatedResult.join("") });
     }
   }
 }

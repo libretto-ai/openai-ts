@@ -11,8 +11,8 @@ import {
 } from "openai/resources/completions";
 import { Stream } from "openai/streaming";
 import { LibrettoConfig, send_event } from ".";
-import { getResolvedPrompt, getResolvedStream } from "./resolvers";
 import { PiiRedactor } from "./pii";
+import { getResolvedPrompt, getResolvedStream } from "./resolvers";
 
 export class LibrettoCompletions extends Completions {
   protected piiRedactor?: PiiRedactor;
@@ -86,7 +86,7 @@ export class LibrettoCompletions extends Completions {
     );
 
     // note: not awaiting the result of this
-    finalResultPromise.then(async (response) => {
+    finalResultPromise.then(async ({ response }) => {
       const responseTime = Date.now() - now;
       let params = libretto?.templateParams ?? {};
 

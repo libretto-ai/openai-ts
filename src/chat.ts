@@ -13,8 +13,8 @@ import {
 } from "openai/resources/chat/completions";
 import { Stream } from "openai/streaming";
 import { LibrettoConfig, send_event } from ".";
-import { getResolvedMessages, getResolvedStream } from "./resolvers";
 import { PiiRedactor } from "./pii";
+import { getResolvedMessages, getResolvedStream } from "./resolvers";
 
 export class LibrettoChat extends Chat {
   constructor(
@@ -94,7 +94,7 @@ class LibrettoChatCompletions extends Completions {
     );
 
     // note: not awaiting the result of this
-    finalResultPromise.then(async (response) => {
+    finalResultPromise.then(async ({ response }) => {
       const responseTime = Date.now() - now;
       let params = libretto?.templateParams ?? {};
 
