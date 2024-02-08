@@ -1,7 +1,7 @@
 {
   "name": "@libretto/openai",
   "main": "lib/src/index.js",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "types": "lib/src/index.d.ts",
   "scripts": {
     "build": "tsc",

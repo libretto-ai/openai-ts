@@ -4,6 +4,21 @@ import { ChatCompletionMessageParam } from "openai/resources/chat";
 import { Stream } from "openai/streaming";
 import { ObjectTemplate } from "./template";
 
+interface ResolvedAPIResult {
+  response: string | null | undefined;
+  usage: OpenAI.Completions.CompletionUsage | undefined;
+  finish_reason:
+    | OpenAI.Completions.CompletionChoice["finish_reason"]
+    | OpenAI.ChatCompletion.Choice["finish_reason"]
+    | undefined
+    | null;
+  logprobs:
+    | OpenAI.Completions.CompletionChoice.Logprobs
+    | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
+    | undefined
+    | null;
+}
+
 /** This function papers over the difference between streamed and unstreamed
  * responses. It splits the response into two parts:
  * 1. The return value, which is what the caller should return immediately (may
@@ -28,7 +43,7 @@ export async function getResolvedStream(
     | Stream<OpenAI.Completions.Completion>
     | OpenAI.Chat.Completions.ChatCompletion
     | OpenAI.Completions.Completion;
-  finalResultPromise: Promise<string | null | undefined>;
+  finalResultPromise: Promise<ResolvedAPIResult>;
 }> {
   if (stream) {
     const chunkStream = (await resultPromise) as
@@ -75,29 +90,68 @@ type PromptString = string | string[] | number[] | number[][] | null;
 
 function getStaticChatCompletion(
   result: OpenAI.Chat.Completions.ChatCompletion,
-) {
+): ResolvedAPIResult {
   if (result.choices[0].message.content) {
-    return result.choices[0].message.content;
+    return {
+      response: result.choices[0].message.content,
+      usage: result.usage,
+      finish_reason: result.choices[0].finish_reason,
+      logprobs: result.choices[0].logprobs,
+    };
   }
   if (result.choices[0].message.function_call) {
-    return JSON.stringify({
-      function_call: result.choices[0].message.function_call,
-    });
+    return {
+      response: JSON.stringify({
+        function_call: result.choices[0].message.function_call,
+      }),
+      usage: result.usage,
+      finish_reason: result.choices[0].finish_reason,
+      logprobs: result.choices[0].logprobs,
+    };
   }
   if (result.choices[0].message.tool_calls) {
-    return JSON.stringify({
-      tool_calls: result.choices[0].message.tool_calls,
-    });
+    return {
+      response: JSON.stringify({
+        tool_calls: result.choices[0].message.tool_calls,
+      }),
+      usage: result.usage,
+      finish_reason: result.choices[0].finish_reason,
+      logprobs: result.choices[0].logprobs,
+    };
   }
+  return {
+    response: undefined,
+    usage: result.usage,
+    finish_reason: result.choices[0].finish_reason,
+    logprobs: result.choices[0].logprobs,
+  };
 }
 
-function getStaticCompletion(result: OpenAI.Completions.Completion | null) {
+function getStaticCompletion(
+  result: OpenAI.Completions.Completion | null,
+): ResolvedAPIResult {
   if (!result) {
-    return null;
+    return {
+      response: null,
+      usage: undefined,
+      finish_reason: undefined,
+      logprobs: undefined,
+    };
   }
   if (result.choices[0].text) {
-    return result.choices[0].text;
+    return {
+      response: result.choices[0].text,
+      usage: result.usage,
+      finish_reason: result.choices[0].finish_reason,
+      logprobs: result.choices[0].logprobs,
+    };
   }
+  return {
+    response: undefined,
+    usage: result.usage,
+    finish_reason: undefined,
+    logprobs: result.choices[0].logprobs,
+  };
 }
 export function getResolvedMessages(
   messages:
@@ -150,9 +204,20 @@ class WrappedStream<
     | OpenAI.Chat.Completions.ChatCompletionChunk
     | OpenAI.Completions.Completion,
 > extends Stream<T> {
-  finishPromise: Promise<string>;
-  private resolveIterator!: (v: string) => void;
+  finishPromise: Promise<ResolvedAPIResult>;
+  private resolveIterator!: (v: ResolvedAPIResult) => void;
   private accumulatedResult: string[] = [];
+  private responseUsage: OpenAI.Completions.CompletionUsage | undefined;
+  private finishReason:
+    | OpenAI.Completions.CompletionChoice["finish_reason"]
+    | OpenAI.ChatCompletion.Choice["finish_reason"]
+    | undefined
+    | null;
+  private logProbs:
+    | OpenAI.Completions.CompletionChoice.Logprobs
+    | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
+    | undefined
+    | null;
   isChat: boolean;
   feedbackKey: string;
 
@@ -188,6 +253,10 @@ class WrappedStream<
               JSON.stringify(chatItem.choices[0].delta.function_call),
             );
           }
+          this.finishReason = chatItem.choices[0].finish_reason;
+          // TODO: get usage from streaming chat. This is currently missing from the API!
+          // https://community.openai.com/t/openai-api-get-usage-tokens-in-response-when-set-stream-true/141866
+          // https://community.openai.com/t/chat-completion-stream-api-token-usage/352964
         } else {
           const completionItem = item as OpenAI.Completions.Completion;
           if (!completionItem.libretto) {
@@ -195,11 +264,19 @@ class WrappedStream<
           }
           completionItem.libretto.feedbackKey = this.feedbackKey;
           this.accumulatedResult.push(completionItem.choices[0].text);
+          this.responseUsage = completionItem.usage;
+          this.finishReason = completionItem.choices[0].finish_reason;
+          this.logProbs = completionItem.choices[0].logprobs;
         }
         yield item;
       }
     } finally {
-      this.resolveIterator(this.accumulatedResult.join(""));
+      this.resolveIterator({
+        response: this.accumulatedResult.join(""),
+        usage: this.responseUsage,
+        finish_reason: this.finishReason,
+        logprobs: this.logProbs,
+      });
     }
   }
 }
