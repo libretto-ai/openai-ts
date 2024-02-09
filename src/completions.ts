@@ -132,7 +132,7 @@ export class LibrettoCompletions extends Completions {
         });
       },
     );
-      
+
     return returnValue as Completion | Stream<Completion>;
   }
 }
