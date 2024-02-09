@@ -1,4 +1,8 @@
-import { type CompletionCreateParamsNonStreaming } from "openai/resources";
+import OpenAI from "openai";
+import {
+  type CompletionCreateParamsNonStreaming,
+  type CompletionUsage,
+} from "openai/resources";
 import { type ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat";
 
 function getUrl(apiName: string, environmentName: string): string {
@@ -47,6 +51,20 @@ export interface PromptEvent {
   responseTime?: number;
   /** Included only if there is an error from openai, or error in validation */
   responseErrors?: string[];
+
+  responseMetrics?: {
+    usage: CompletionUsage | undefined;
+    finish_reason:
+      | OpenAI.Completions.CompletionChoice["finish_reason"]
+      | OpenAI.ChatCompletion.Choice["finish_reason"]
+      | undefined
+      | null;
+    logprobs:
+      | OpenAI.Completions.CompletionChoice.Logprobs
+      | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
+      | undefined
+      | null;
+  };
   // eslint-disable-next-line @typescript-eslint/ban-types
   prompt: {}; //hack
 }
@@ -102,13 +120,13 @@ export interface Feedback {
 /** Send feedback to the  */
 export async function sendFeedback(body: Feedback) {
   if (!body.feedbackKey) {
-    console.log("Could not send feedback to Libretto: missing feedback key");
+    console.warn("Could not send feedback to Libretto: missing feedback key");
     return;
   }
 
   body.apiKey = body.apiKey ?? process.env.LIBRETTO_API_KEY;
   if (!body.apiKey) {
-    console.log("Could not send feedback to Libretto: missing API key");
+    console.warn("Could not send feedback to Libretto: missing API key");
     return;
   }
 

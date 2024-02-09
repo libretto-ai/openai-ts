@@ -11,8 +11,8 @@ import {
 } from "openai/resources/completions";
 import { Stream } from "openai/streaming";
 import { LibrettoConfig, send_event } from ".";
-import { getResolvedPrompt, getResolvedStream } from "./resolvers";
 import { PiiRedactor } from "./pii";
+import { getResolvedPrompt, getResolvedStream } from "./resolvers";
 
 export class LibrettoCompletions extends Completions {
   protected piiRedactor?: PiiRedactor;
@@ -86,44 +86,53 @@ export class LibrettoCompletions extends Completions {
     );
 
     // note: not awaiting the result of this
-    finalResultPromise.then(async (response) => {
-      const responseTime = Date.now() - now;
-      let params = libretto?.templateParams ?? {};
+    finalResultPromise.then(
+      async ({ response, finish_reason, logprobs, usage }) => {
+        const responseTime = Date.now() - now;
+        let params = libretto?.templateParams ?? {};
 
-      // Redact PII before recording the event
-      if (this.piiRedactor) {
-        try {
-          response = this.piiRedactor.redact(response);
-          params = this.piiRedactor.redact(params);
-        } catch (err) {
-          console.log("Failed to redact PII", err);
+        // Redact PII before recording the event
+        if (this.piiRedactor) {
+          try {
+            response = this.piiRedactor.redact(response);
+            params = this.piiRedactor.redact(params);
+          } catch (err) {
+            console.log("Failed to redact PII", err);
+          }
         }
-      }
 
-      await send_event({
-        responseTime,
-        response,
-        params: params,
-        apiKey:
-          libretto?.apiKey ??
-          this.config.apiKey ??
-          process.env.LIBRETTO_API_KEY,
-        promptTemplateText:
-          libretto?.templateText ?? template ?? resolvedPromptStr,
-        promptTemplateName: resolvedPromptTemplateName,
-        apiName: libretto?.promptTemplateName ?? this.config.promptTemplateName,
-        prompt: {},
-        chatId: libretto?.chatId ?? this.config.chatId,
-        parentEventId: libretto?.parentEventId,
-        feedbackKey,
-        context: libretto?.context,
-        modelParameters: {
-          modelProvider: "openai",
-          modelType: "completion",
-          ...openaiBody,
-        },
-      });
-    });
+        await send_event({
+          responseTime,
+          response,
+          responseMetrics: {
+            usage,
+            finish_reason,
+            logprobs,
+          },
+          params: params,
+          apiKey:
+            libretto?.apiKey ??
+            this.config.apiKey ??
+            process.env.LIBRETTO_API_KEY,
+          promptTemplateText:
+            libretto?.templateText ?? template ?? resolvedPromptStr,
+          promptTemplateName: resolvedPromptTemplateName,
+          apiName:
+            libretto?.promptTemplateName ?? this.config.promptTemplateName,
+          prompt: {},
+          chatId: libretto?.chatId ?? this.config.chatId,
+          parentEventId: libretto?.parentEventId,
+          context: libretto?.context,
+          feedbackKey,
+          modelParameters: {
+            modelProvider: "openai",
+            modelType: "completion",
+            ...openaiBody,
+          },
+        });
+      },
+    );
+      
     return returnValue as Completion | Stream<Completion>;
   }
 }
