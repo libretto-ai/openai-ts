@@ -21,10 +21,13 @@ type LibrettoCreateParams = {
   chatId?: string;
   parentEventId?: string;
   feedbackKey?: string;
+  context?: Record<string, any>;
 };
 
+//todo: should we mark these as readonly?
 type LibrettoCompletion = {
   feedbackKey?: string;
+  context?: Record<string, any>;
 };
 
 declare module "openai" {

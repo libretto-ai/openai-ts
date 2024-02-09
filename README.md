@@ -47,6 +47,8 @@ async function main() {
       promptTemplateName: "ts-client-test-chat",
       // The parameters to fill in the template.
       templateParams: { name: "John" },
+      //optional: key/value for passing any additional information for tracing
+      context: { someKey: "somevalue" },
     },
   });
 
@@ -95,6 +97,8 @@ added to the base OpenAI `create` call interface:
 - `feedbackKey`: The optional key used to send feedback on the prompt, for
   use with `sendFeedback()` later. This is normally auto-generated, and the
   value is returned in the OpenAI response.
+- `context`: This optional key/value map lets you send additional information
+  along with your request such as internal tracing IDs, user IDs etc.
 
 ## Sending Feedback
 

@@ -122,6 +122,7 @@ export class LibrettoCompletions extends Completions {
           prompt: {},
           chatId: libretto?.chatId ?? this.config.chatId,
           parentEventId: libretto?.parentEventId,
+          context: libretto?.context,
           feedbackKey,
           modelParameters: {
             modelProvider: "openai",
@@ -131,6 +132,7 @@ export class LibrettoCompletions extends Completions {
         });
       },
     );
+
     return returnValue as Completion | Stream<Completion>;
   }
 }

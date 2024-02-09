@@ -40,6 +40,7 @@ export interface EventMetadata {
   parentEventId?: string;
   modelParameters?: ModelParameters;
   feedbackKey?: string;
+  context?: Record<string, any>;
   tools?: any[];
 }
 export interface PromptEvent {
