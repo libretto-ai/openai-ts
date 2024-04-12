@@ -3,7 +3,25 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
   },
-  "editor.tabSize": 2
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "eslint.codeActionsOnSave.rules": [
+    "react/jsx-curly-brace-presence",
+    "curly",
+    "no-useless-rename",
+    "object-shorthand",
+  ],
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "[typescript][typescriptreact]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  }
 }
