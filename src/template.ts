@@ -1,6 +1,8 @@
 // we only support the simplest of template expressions
 const templateExpression = /({[a-zA-Z0-9_[\].]+})/g;
 const templateExpressionVarName = /{([a-zA-Z0-9_[\].]+)}/g;
+// We have a special keyword that we use to expand out an array for a chat_history argument
+const CHAT_HISTORY_KEY = "chat_history";
 
 /**
  * An alternative to template literals that allows for capturing the name of the
@@ -122,6 +124,10 @@ export function objectTemplate<T>(objs: T): ObjectTemplate<T> {
 
     return Object.fromEntries(
       Object.entries(objs).map(([key, value]) => {
+        if (CHAT_HISTORY_KEY === key) {
+          console.log("CHAT_HISTORY_KEY", value);
+        }
+
         return [
           f(key).format(parameters),
           objectTemplate(value).format(parameters),
