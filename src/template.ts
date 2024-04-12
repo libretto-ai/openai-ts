@@ -113,7 +113,11 @@ export function objectTemplate<T>(objs: T): ObjectTemplate<T> {
       return f(objs).format(parameters) as T;
     }
     if (Array.isArray(objs)) {
-      return objs.map((item) => objectTemplate(item).format(parameters)) as T;
+      return objs.map((item) => {
+        const y = objectTemplate(item).format(parameters);
+        console.log(y);
+        return y;
+      }) as T;
     }
 
     return Object.fromEntries(

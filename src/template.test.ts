@@ -89,5 +89,37 @@ describe("templating", () => {
         },
       ]);
     });
+
+    it("Should format a chat template with a chat history role", () => {
+      expect(
+        objectTemplate([
+          {
+            role: "system",
+            content:
+              "You will be asked for travel recomendations by a {role}. Answer as you were a travel guide and give no more than {quantity} recommendation options per answer. Just answer with the options and don't give any introduction. Use markdown to format your response.",
+          },
+          {
+            role: "user",
+            content: "Where can I eat {food} in {city}?",
+          },
+        ]).format({
+          role: "tourist",
+          quantity: 3,
+          food: "pizza",
+          city: "Rome",
+        }),
+      ).toEqual([
+        {
+          role: "system",
+          content:
+            "You will be asked for travel recomendations by a tourist. Answer as you were a travel guide and give no more than 3 recommendation options per answer. Just answer with the options and don't give any introduction. Use markdown to format your response.",
+        },
+        {
+          role: "user",
+          content: "Where can I eat pizza in Rome?",
+        },
+      ]);
+    });
+
   });
 });
