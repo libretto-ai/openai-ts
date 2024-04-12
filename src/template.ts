@@ -123,18 +123,7 @@ export function objectTemplate<T>(objs: T): ObjectTemplate<T> {
           // We have special handling for chat history, as we need to expand out
           // the given variable
           if (isLibrettoChatHistory(item)) {
-            // Validate we have expected parameters for chat_history
-            if (
-              !parameters[CHAT_HISTORY] ||
-              !Array.isArray(parameters[CHAT_HISTORY])
-            ) {
-              throw new Error(
-                `The Template expects there to be an array for the 'chat_history' parameter, but none was found or it was not an array. Ensure 'chat_history' is a parameter in the templateParams and that it is an array.`,
-              );
-            }
-
-            // Loop through the chat_history parameters, and expand as regular chat messages
-            return [...parameters[CHAT_HISTORY]];
+            return handleChatHistory(parameters[CHAT_HISTORY]);
           }
 
           return objectTemplate(item).format(parameters);
@@ -205,4 +194,16 @@ function isLibrettoChatHistory(objs: any): boolean {
   }
 
   return false;
+}
+
+function handleChatHistory(chatHistoryParamValues: any): any[] {
+  // Validate we have expected parameters for chat_history
+  if (!chatHistoryParamValues || !Array.isArray(chatHistoryParamValues)) {
+    throw new Error(
+      `The Template expects there to be an array for the 'chat_history' parameter, but none was found or it was not an array. Ensure 'chat_history' is a parameter in the templateParams and that it is an array.`,
+    );
+  }
+
+  // Loop through the chat_history parameters, and expand as regular chat messages
+  return [...chatHistoryParamValues];
 }
