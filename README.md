@@ -100,6 +100,38 @@ added to the base OpenAI `create` call interface:
 - `context`: This optional key/value map lets you send additional information
   along with your request such as internal tracing IDs, user IDs etc.
 
+## Maintaining Chat History
+
+In scenarios where you are in the context of a chat dialog, you will want to
+maintain the history of the chat through each turn based request. Libretto has
+a reserved `role` that you can use for where you want to insert the full chat
+history. In your messages provided to `objectTemplate` you simply insert the
+following:
+
+```typescript
+{
+  role: "chat_history",
+  content: "{chat_history}"
+}
+```
+
+Finally, you have control over what gets inserted there in your request sent
+to OpenAI. In your `templateParams` you provide the previous messages:
+
+```typescript
+  templateParams: {
+    chat_history: [
+      {
+        role: "user",
+        content: "First user message",
+      },
+      {
+        role: "assistant",
+        content: "First response from model",
+      },
+    ],
+```
+
 ## Sending Feedback
 
 Sometimes the answer provided by the LLM is not ideal, and your users may be
@@ -108,7 +140,7 @@ able to help you find better responses. There are a few common cases:
 - You might use the LLM to suggest the title of a news article, but let the
   user edit it. If they change the title, you can send feedback to Libretto
   that the answer was not ideal.
-- You might provide a chatbot that answers questions, and the user can rate the  
+- You might provide a chatbot that answers questions, and the user can rate the
   answers with a thumbs up (good) or thumbs down (bad).
 
 You can send this feedback to Libretto by calling `sendFeedback()`. This will
