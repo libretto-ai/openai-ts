@@ -96,27 +96,46 @@ describe("templating", () => {
           {
             role: "system",
             content:
-              "You will be asked for travel recomendations by a {role}. Answer as you were a travel guide and give no more than {quantity} recommendation options per answer. Just answer with the options and don't give any introduction. Use markdown to format your response.",
+              "You are a helpful assistant who guides executives on how to manage employees.",
+          },
+          {
+            role: "chat_history",
+            content: "{chat_history}",
           },
           {
             role: "user",
-            content: "Where can I eat {food} in {city}?",
+            content: "{question}",
           },
         ]).format({
-          role: "tourist",
-          quantity: 3,
-          food: "pizza",
-          city: "Rome",
+          chat_history: [
+            {
+              role: "user",
+              content: "I demand them to be on time.",
+            },
+            {
+              role: "assistant",
+              content: "I suggest you to be more polite.",
+            },
+          ],
+          question: "What if they are rude after my suggestions?",
         }),
       ).toEqual([
         {
           role: "system",
           content:
-            "You will be asked for travel recomendations by a tourist. Answer as you were a travel guide and give no more than 3 recommendation options per answer. Just answer with the options and don't give any introduction. Use markdown to format your response.",
+            "You are a helpful assistant who guides executives on how to manage employees.",
         },
         {
           role: "user",
-          content: "Where can I eat pizza in Rome?",
+          content: "I demand them to be on time.",
+        },
+        {
+          role: "assistant",
+          content: "I suggest you to be more polite.",
+        },
+        {
+          role: "user",
+          content: "What if they are rude after my suggestions?",
         },
       ]);
     });
