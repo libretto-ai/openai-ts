@@ -120,6 +120,5 @@ describe("templating", () => {
         },
       ]);
     });
-
   });
 });

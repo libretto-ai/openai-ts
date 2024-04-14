@@ -14,7 +14,7 @@
     "react/jsx-curly-brace-presence",
     "curly",
     "no-useless-rename",
-    "object-shorthand",
+    "object-shorthand"
   ],
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
