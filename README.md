@@ -116,7 +116,7 @@ following:
 ```
 
 Finally, you have control over what gets inserted there in your request sent
-to OpenAI. In your `templateParams` you provide the previous messages:
+to OpenAI. In your `templateParams` you provide the aforementioned messages:
 
 ```typescript
   templateParams: {

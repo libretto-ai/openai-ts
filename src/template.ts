@@ -118,17 +118,15 @@ export function objectTemplate<T>(objs: T): ObjectTemplate<T> {
       return f(objs).format(parameters) as T;
     }
     if (Array.isArray(objs)) {
-      return objs
-        .map((item) => {
-          // We have special handling for chat history, as we need to expand out
-          // the given variable
-          if (isLibrettoChatHistory(item)) {
-            return handleChatHistory(parameters[CHAT_HISTORY]);
-          }
+      return objs.flatMap((item) => {
+        // We have special handling for chat history, as we need to expand out
+        // the given variable
+        if (isLibrettoChatHistory(item)) {
+          return handleChatHistory(parameters[CHAT_HISTORY]);
+        }
 
-          return objectTemplate(item).format(parameters);
-        })
-        .flat() as T;
+        return objectTemplate(item).format(parameters);
+      }) as T;
     }
 
     return Object.fromEntries(
