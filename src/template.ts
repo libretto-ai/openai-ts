@@ -1,11 +1,10 @@
 // we only support the simplest of template expressions
 const templateExpression = /({[a-zA-Z0-9_[\].]+})/g;
 const templateExpressionVarName = /{([a-zA-Z0-9_[\].]+)}/g;
+
 // We have a special keyword that we use to expand out an array for a chat_history argument
 const CHAT_HISTORY = "chat_history";
-const CHAT_HISTORY_VARIABLE = "{chat_history}";
 const ROLE_KEY = "role";
-const CONTENT_KEY = "content";
 
 /**
  * An alternative to template literals that allows for capturing the name of the
@@ -122,7 +121,7 @@ export function objectTemplate<T>(objs: T): ObjectTemplate<T> {
         // We have special handling for chat history, as we need to expand out
         // the given variable
         if (isLibrettoChatHistory(item)) {
-          return handleChatHistory(parameters[CHAT_HISTORY]);
+          return handleChatHistory(item, parameters);
         }
 
         return objectTemplate(item).format(parameters);
@@ -183,25 +182,33 @@ function isLibrettoChatHistory(objs: any): boolean {
     return false;
   }
 
-  // An object, check role and content for chat_history
-  if (ROLE_KEY in objs && CONTENT_KEY in objs) {
-    return (
-      objs[ROLE_KEY] === CHAT_HISTORY &&
-      objs[CONTENT_KEY] === CHAT_HISTORY_VARIABLE
-    );
+  // An object, check role being chat_history
+  if (ROLE_KEY in objs) {
+    return objs[ROLE_KEY] === CHAT_HISTORY;
   }
 
   return false;
 }
 
-function handleChatHistory(chatHistoryParamValues: any): any[] {
-  // Validate we have expected parameters for chat_history
-  if (!chatHistoryParamValues || !Array.isArray(chatHistoryParamValues)) {
+function handleChatHistory(item: any, params: any): any[] {
+  const varsInChatHistory = objTemplateVariables(item);
+
+  if (varsInChatHistory.length === 0) {
     throw new Error(
-      `The Template expects there to be an array for the 'chat_history' parameter, but none was found or it was not an array. Ensure 'chat_history' is a parameter in the templateParams and that it is an array.`,
+      `Expected to find a variable in the content of the chat_history role, but none was found`,
     );
   }
 
-  // Loop through the chat_history parameters, and expand as regular chat messages
-  return [...chatHistoryParamValues];
+  const allHistory = varsInChatHistory.reduce((acc, varName) => {
+    const value = params[varName];
+    if (!value) {
+      throw new Error(
+        `No value was found in 'templateParams' for the variable '${varName}'. Ensure you have a corresponding entry in 'templateParams'.`,
+      );
+    }
+    acc.push(...value);
+    return acc;
+  }, [] as any[]);
+
+  return [...allHistory];
 }

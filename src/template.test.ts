@@ -100,24 +100,34 @@ describe("templating", () => {
           },
           {
             role: "chat_history",
-            content: "{chat_history}",
+            content: "{prev_messages} {second_history}",
           },
           {
             role: "user",
             content: "{question}",
           },
         ]).format({
-          chat_history: [
+          prev_messages: [
             {
               role: "user",
-              content: "I demand them to be on time.",
+              content: "You are always late to work.",
             },
             {
               role: "assistant",
               content: "I suggest you to be more polite.",
             },
           ],
-          question: "What if they are rude after my suggestions?",
+          second_history: [
+            {
+              role: "user",
+              content: "Is there something going on that makes you late?",
+            },
+            {
+              role: "assistant",
+              content: "That's a little better.",
+            },
+          ],
+          question: "Why are you being so short with me?",
         }),
       ).toEqual([
         {
@@ -127,7 +137,7 @@ describe("templating", () => {
         },
         {
           role: "user",
-          content: "I demand them to be on time.",
+          content: "You are always late to work.",
         },
         {
           role: "assistant",
@@ -135,7 +145,15 @@ describe("templating", () => {
         },
         {
           role: "user",
-          content: "What if they are rude after my suggestions?",
+          content: "Is there something going on that makes you late?",
+        },
+        {
+          role: "assistant",
+          content: "That's a little better.",
+        },
+        {
+          role: "user",
+          content: "Why are you being so short with me?",
         },
       ]);
     });

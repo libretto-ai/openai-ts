@@ -15,7 +15,7 @@ async function main() {
       },
       {
         role: "chat_history",
-        content: "{chat_history}",
+        content: "{prev_messages} {second_history}",
       },
       {
         role: "user",
@@ -30,7 +30,7 @@ async function main() {
       chatId: "c1",
       // The parameters to fill in the template.
       templateParams: {
-        chat_history: [
+        prev_messages: [
           {
             role: "user",
             content: "I am not feeling very good because of my home life.",
@@ -38,6 +38,16 @@ async function main() {
           {
             role: "assistant",
             content: "I am sorry to hear that.",
+          },
+        ],
+        second_history: [
+          {
+            role: "user",
+            content: "Thank you for the kind words.",
+          },
+          {
+            role: "assistant",
+            content: "You're welcome",
           },
         ],
         coach_question:
