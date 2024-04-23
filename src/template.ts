@@ -1,7 +1,12 @@
 // we only support the simplest of template expressions
-const templateExpression = /({[a-zA-Z0-9_[\].]+})/g;
-const templateExpressionVarName = /{([a-zA-Z0-9_[\].]+)}/g;
 
+/** Match a full template expression, e.g. '{foo}' in 'replace {foo} now' */
+const templateExpression = /({[a-zA-Z0-9_[\].]+})/g;
+/** Match the variable inside a template expression, e.g. the 'foo' in 'replace {foo} now' */
+const templateExpressionVarName = /{([a-zA-Z0-9_[\].]+)}/g;
+/** Unescape variable names, e.g. if the template originally contained \\{foo\\}
+ * to avoid substitutions, then replace it again with {foo} */
+const unescapeVariableExpression = /\\{([a-zA-Z0-9_[\].]+)\\}/g;
 // We have a special keyword that we use to expand out an array for a chat_history argument
 const CHAT_HISTORY = "chat_history";
 const ROLE_KEY = "role";
@@ -119,7 +124,12 @@ export function objectTemplate<T>(objs: T): ObjectTemplate<T> {
       return objs;
     }
     if (typeof objs == "string") {
-      return f(objs).format(parameters) as T;
+      const formattedResult = f(objs).format(parameters);
+
+      return formattedResult.replace(
+        unescapeVariableExpression,
+        (_match, variableName) => `{${variableName}}`,
+      ) as T;
     }
     if (Array.isArray(objs)) {
       return objs.flatMap((item) => {
