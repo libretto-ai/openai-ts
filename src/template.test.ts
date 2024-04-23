@@ -161,5 +161,32 @@ describe("templating", () => {
         },
       ]);
     });
+
+    it("Should unescape escaped variable references", () => {
+      expect(
+        objectTemplate({
+          a: "A here: \\{a\\}",
+          b: "B here: \\{b\\}",
+          c: { d: "D here: \\{d\\}", e: "E here: \\{e\\}" },
+        }).format({}),
+      ).toEqual({
+        a: "A here: {a}",
+        b: "B here: {b}",
+        c: { d: "D here: {d}", e: "E here: {e}" },
+      });
+    });
+    it("Should allow mixing of escaped and unescaped variable references", () => {
+      expect(
+        objectTemplate({
+          a: "A here: \\{a\\} but this is the value of a: {a}",
+          b: "B here: \\{b\\}",
+          c: { d: "D here: \\{d\\}", e: "E here: \\{e\\}" },
+        }).format({ a: "Heya" }),
+      ).toEqual({
+        a: "A here: {a} but this is the value of a: Heya",
+        b: "B here: {b}",
+        c: { d: "D here: {d}", e: "E here: {e}" },
+      });
+    });
   });
 });
