@@ -60,14 +60,19 @@ export function f(
   );
   return {
     format(parameters: Record<string, any>) {
-      return str.replace(templateExpressionVarName, (match, variableName) => {
-        if (parameters[variableName] === undefined) {
-          throw new Error(
-            `Can't format template, missing variable: ${variableName}`,
-          );
-        }
-        return parameters[variableName];
-      });
+      return str
+        .replace(templateExpressionVarName, (match, variableName) => {
+          if (parameters[variableName] === undefined) {
+            throw new Error(
+              `Can't format template, missing variable: ${variableName}`,
+            );
+          }
+          return parameters[variableName];
+        })
+        .replace(
+          unescapeVariableExpression,
+          (_match, variableName) => `{${variableName}}`,
+        );
     },
     variables: Object.freeze(variables),
     template: str,
@@ -124,12 +129,7 @@ export function objectTemplate<T>(objs: T): ObjectTemplate<T> {
       return objs;
     }
     if (typeof objs == "string") {
-      const formattedResult = f(objs).format(parameters);
-
-      return formattedResult.replace(
-        unescapeVariableExpression,
-        (_match, variableName) => `{${variableName}}`,
-      ) as T;
+      return f(objs).format(parameters) as T;
     }
     if (Array.isArray(objs)) {
       return objs.flatMap((item) => {
