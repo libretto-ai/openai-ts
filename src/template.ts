@@ -56,6 +56,11 @@ export function f(
   return {
     format(parameters: Record<string, any>) {
       return str.replace(templateExpressionVarName, (match, variableName) => {
+        if (parameters[variableName] === undefined) {
+          throw new Error(
+            `Can't format template, missing variable: ${variableName}`,
+          );
+        }
         return parameters[variableName];
       });
     },

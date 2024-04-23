@@ -10,14 +10,18 @@ describe("templating", () => {
       const a = "a";
       const b = "b";
       const c = "c";
-      expect(() => f`${a} ${b} ${c}`.variables).toThrowError(
-        "No inline variables",
-      );
+      expect(() => f`${a} ${b} ${c}`.variables).toThrow("No inline variables");
     });
 
     it("Should format to a string", () => {
       expect(f`{a} {b} {c}`.format({ a: "A", b: "B", c: "C" })).toEqual(
         "A B C",
+      );
+    });
+
+    it("Should throw an error if any variable is missing during formatting", () => {
+      expect(() => f`{a} {b} {c}`.format({ a: "A", c: "C" })).toThrow(
+        "missing variable",
       );
     });
   });
