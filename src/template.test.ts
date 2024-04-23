@@ -93,5 +93,73 @@ describe("templating", () => {
         },
       ]);
     });
+
+    it("Should format a chat template with a chat history role", () => {
+      expect(
+        objectTemplate([
+          {
+            role: "system",
+            content:
+              "You are a helpful assistant who guides executives on how to manage employees.",
+          },
+          {
+            role: "chat_history",
+            content: "{prev_messages} {second_history}",
+          },
+          {
+            role: "user",
+            content: "{question}",
+          },
+        ]).format({
+          prev_messages: [
+            {
+              role: "user",
+              content: "You are always late to work.",
+            },
+            {
+              role: "assistant",
+              content: "I suggest you to be more polite.",
+            },
+          ],
+          second_history: [
+            {
+              role: "user",
+              content: "Is there something going on that makes you late?",
+            },
+            {
+              role: "assistant",
+              content: "That's a little better.",
+            },
+          ],
+          question: "Why are you being so short with me?",
+        }),
+      ).toEqual([
+        {
+          role: "system",
+          content:
+            "You are a helpful assistant who guides executives on how to manage employees.",
+        },
+        {
+          role: "user",
+          content: "You are always late to work.",
+        },
+        {
+          role: "assistant",
+          content: "I suggest you to be more polite.",
+        },
+        {
+          role: "user",
+          content: "Is there something going on that makes you late?",
+        },
+        {
+          role: "assistant",
+          content: "That's a little better.",
+        },
+        {
+          role: "user",
+          content: "Why are you being so short with me?",
+        },
+      ]);
+    });
   });
 });
