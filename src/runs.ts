@@ -155,30 +155,4 @@ export class LibrettoRuns extends Runs {
     this.runObserver.addRun(threadId, resp.id);
     return resp;
   }
-
-  // override create(
-  //   threadId: string,
-  //   body: RunCreateParamsNonStreaming,
-  //   options?: RequestOptions | undefined,
-  // ): APIPromise<Run>;
-  // override create(
-  //   threadId: string,
-  //   body: RunCreateParamsStreaming,
-  //   options?: RequestOptions | undefined,
-  // ): APIPromise<Stream<AssistantStreamEvent>>;
-  // override create(
-  //   threadId: string,
-  //   body: RunCreateParamsBase,
-  //   options?: RequestOptions | undefined,
-  // ): APIPromise<Run | Stream<AssistantStreamEvent>>;
-  // override create(
-  //   threadId: string,
-  //   body: RunCreateParams,
-  //   options?: RequestOptions,
-  // ): APIPromise<Run> | APIPromise<Stream<AssistantStreamEvent>> {
-  //   const resp = super.create(threadId, body, options) as
-  //     | APIPromise<Run>
-  //     | APIPromise<Stream<AssistantStreamEvent>>;
-  //   return resp;
-  // }
 }
