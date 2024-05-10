@@ -71,50 +71,51 @@ class RunObserver {
     if (messages.length === 0) {
       return;
     }
-    const latestMessage = messages[messages.length - 1];
 
-    await send_event({
-      responseTime: 1,
-      response:
-        latestMessage.content[0].type === "text"
-          ? latestMessage.content[0].text.value
-          : "",
-      params: {
-        chat_history: messages.map((msg) => {
-          if (msg.content.length === 0 || msg.content[0].type !== "text") {
-            throw new Error(`Unexpected message: ${JSON.stringify(msg)}`);
-          }
-          return {
-            role: msg.role,
-            content: msg.content[0].text.value,
-          };
-        }),
-      },
-      apiKey: process.env.LIBRETTO_API_KEY,
-      promptTemplateChat: [
-        {
-          role: "assistant",
-          content: assistant.instructions,
-        },
-        {
-          role: "chat_history",
-          content: "{chat_history}",
-        },
-      ],
-      // promptTemplateName: assistant.name ?? assistant.id,
-      // apiName: assistant.name ?? assistant.id,
-      promptTemplateName: assistant.id,
-      apiName: assistant.id,
-      prompt: {},
-      chatId: threadId,
-      // parentEventId: libretto?.parentEventId,
-    });
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+      if (msg.content.length === 0 || msg.content[0].type !== "text") {
+        console.log(
+          `[Libretto] Skipping unsupported assistant message: ${JSON.stringify(msg)}`,
+        );
+        continue;
+      }
 
-    await this.client.beta.threads.update(threadId, {
-      metadata: {
-        "libretto.cursor": latestMessage.id,
-      },
-    });
+      await send_event({
+        responseTime: 1,
+        response: msg.content[0].text.value,
+        params: {
+          chat_history: [
+            {
+              role: msg.role,
+              content: msg.content[0].text.value,
+            },
+          ],
+        },
+        apiKey: process.env.LIBRETTO_API_KEY,
+        promptTemplateChat: [
+          {
+            role: "assistant",
+            content: assistant.instructions,
+          },
+          {
+            role: "chat_history",
+            content: "{chat_history}",
+          },
+        ],
+        promptTemplateName: assistant.name ?? assistant.id,
+        apiName: assistant.name ?? assistant.id,
+        prompt: {},
+        chatId: threadId,
+        feedbackKey: msg.id,
+      });
+
+      await this.client.beta.threads.update(threadId, {
+        metadata: {
+          "libretto.cursor": msg.id,
+        },
+      });
+    }
   }
 }
 
