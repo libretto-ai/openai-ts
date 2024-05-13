@@ -1,13 +1,15 @@
-import { OpenAI as _OpenAI } from "openai";
-import { ClientOptions } from "openai";
-import { LibrettoCompletions } from "./completions";
+import { ClientOptions, OpenAI as _OpenAI } from "openai";
+import { LibrettoBeta } from "./beta";
 import { LibrettoChat } from "./chat";
+import { LibrettoCompletions } from "./completions";
 
 export class OpenAI extends _OpenAI {
   constructor(opts?: ClientOptions) {
     super(opts);
 
-    this.completions = new LibrettoCompletions(this, opts?.libretto ?? {});
-    this.chat = new LibrettoChat(this, opts?.libretto ?? {});
+    const config = opts?.libretto ?? {};
+    this.completions = new LibrettoCompletions(this, config);
+    this.chat = new LibrettoChat(this, config);
+    this.beta = new LibrettoBeta(this, config);
   }
 }
