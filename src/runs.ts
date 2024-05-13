@@ -5,40 +5,48 @@ import {
   RunCreateParamsNonStreaming,
   Runs,
 } from "openai/resources/beta/threads/runs/runs";
-import { LibrettoConfig, send_event } from ".";
+import { LibrettoConfig, LibrettoRunCreateParams, send_event } from ".";
+
+type RunParams = {
+  runId: string;
+  opts?: LibrettoRunCreateParams;
+};
 
 class RunObserver {
-  protected threadQueues: Record<string, string[]> = {};
+  protected threadQueues: Record<string, RunParams[]> = {};
 
-  constructor(protected client: OpenAI) {}
+  constructor(
+    protected client: OpenAI,
+    protected config: LibrettoConfig,
+  ) {}
 
-  addRun(threadId: string, runId: string) {
+  addRun(threadId: string, params: RunParams) {
     const queue = this.threadQueues[threadId];
 
     // If another run is already being processed for this thread, just enqueue this new run.
     // The handleThread invocation that's processing the existing run(s) will eventually pick
     // up this one too.
     if (queue && queue.length > 0) {
-      queue.push(runId);
+      queue.push(params);
       return;
     }
 
     // No work is currently being done on this thread, so invoke an asynchronous handler to
     // start processing the run.
-    this.threadQueues[threadId] = [runId];
+    this.threadQueues[threadId] = [params];
     this.handleThread(threadId);
   }
 
   protected async handleThread(threadId: string) {
     for (;;) {
-      const runId = this.threadQueues[threadId].shift();
-      if (!runId) {
+      const runParams = this.threadQueues[threadId].shift();
+      if (!runParams) {
         delete this.threadQueues[threadId];
         break;
       }
 
       try {
-        await this.handleRun(threadId, runId);
+        await this.handleRun(threadId, runParams);
       } catch (err) {
         console.error(
           `[Libretto] Failed to handle Assistant thread run: ${err}`,
@@ -47,11 +55,14 @@ class RunObserver {
     }
   }
 
-  protected async handleRun(threadId: string, runId: string) {
-    const run = await this.client.beta.threads.runs.poll(threadId, runId);
+  protected async handleRun(threadId: string, params: RunParams) {
+    const run = await this.client.beta.threads.runs.poll(
+      threadId,
+      params.runId,
+    );
     if (run.status !== "completed") {
       console.log(
-        `[Libretto] Assistant thread run did not complete, ignoring: threadId=${threadId} runId=${runId}`,
+        `[Libretto] Assistant thread run did not complete, ignoring: threadId=${threadId} runId=${params.runId}`,
       );
       return;
     }
@@ -94,7 +105,10 @@ class RunObserver {
             },
           ],
         },
-        apiKey: process.env.LIBRETTO_API_KEY,
+        apiKey:
+          params.opts?.apiKey ??
+          this.config.apiKey ??
+          process.env.LIBRETTO_API_KEY,
         promptTemplateChat: [
           {
             role: "assistant",
@@ -106,7 +120,8 @@ class RunObserver {
           },
         ],
         promptTemplateName: assistant.name ?? assistant.id,
-        apiName: assistant.name ?? assistant.id,
+        apiName:
+          params.opts?.promptTemplateName ?? assistant.name ?? assistant.id,
         prompt: {},
         chatId: threadId,
         feedbackKey: msg.id,
@@ -129,7 +144,7 @@ export class LibrettoRuns extends Runs {
     protected config: LibrettoConfig,
   ) {
     super(client);
-    this.runObserver = new RunObserver(client);
+    this.runObserver = new RunObserver(client, config);
   }
 
   override createAndPoll(
@@ -153,8 +168,17 @@ export class LibrettoRuns extends Runs {
         })
       | undefined,
   ) {
-    const resp = await super.createAndPoll(threadId, body, options);
-    this.runObserver.addRun(threadId, resp.id);
+    const { libretto, ...rest } = body;
+    const resp = await super.createAndPoll(threadId, rest, options);
+    if (libretto && libretto.promptTemplateName) {
+      this.runObserver.addRun(threadId, {
+        runId: resp.id,
+        opts: {
+          apiKey: libretto.apiKey,
+          promptTemplateName: libretto.promptTemplateName,
+        },
+      });
+    }
     return resp;
   }
 }
