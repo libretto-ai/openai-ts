@@ -16,13 +16,15 @@ class RunObserver {
     const queue = this.threadQueues[threadId];
 
     // If another run is already being processed for this thread, just enqueue this new run.
-    // The worker that's handling the existing run(s) will eventually process this one too.
+    // The handleThread invocation that's processing the existing run(s) will eventually pick
+    // up this one too.
     if (queue && queue.length > 0) {
       queue.push(runId);
       return;
     }
 
-    // No work is currently being done on this thread, so start a worker to process this run.
+    // No work is currently being done on this thread, so invoke an asynchronous handler to
+    // start processing the run.
     this.threadQueues[threadId] = [runId];
     this.handleThread(threadId);
   }
