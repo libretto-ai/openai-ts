@@ -1,7 +1,7 @@
 import { ChatCompletionMessage } from "openai/resources/chat";
 
-export { Event, Feedback, sendFeedback, send_event } from "./session";
 export { OpenAI } from "./client";
+export { Event, Feedback, sendFeedback, send_event } from "./session";
 export { f, objectTemplate } from "./template";
 
 export type LibrettoConfig = {
@@ -28,6 +28,11 @@ type LibrettoCreateParams = {
 type LibrettoCompletion = {
   feedbackKey?: string;
   context?: Record<string, any>;
+};
+
+export type LibrettoRunCreateParams = {
+  apiKey?: string;
+  promptTemplateName?: string;
 };
 
 declare module "openai" {
@@ -57,5 +62,11 @@ declare module "openai/resources/completions" {
 
   interface Completion {
     libretto?: LibrettoCompletion;
+  }
+}
+
+declare module "openai/resources/beta/threads/runs/runs" {
+  interface RunCreateParamsBase {
+    libretto?: LibrettoRunCreateParams;
   }
 }
