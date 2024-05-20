@@ -3,6 +3,11 @@
   "main": "lib/src/index.js",
   "version": "1.0.10",
   "types": "lib/src/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/libretto-ai/openai-ts.git"
+  },
+  "homepage": "https://www.getlibretto.com/",
   "scripts": {
     "build": "tsc",
     "prepublish": "npm run build",
