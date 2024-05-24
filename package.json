@@ -1,11 +1,11 @@
 {
-  "name": "@libretto/openai",
+  "name": "@libretto/anthropic",
   "main": "lib/src/index.js",
   "version": "1.0.11",
   "types": "lib/src/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/libretto-ai/openai-ts.git"
+    "url": "https://github.com/libretto-ai/anthropic-ts.git"
   },
   "homepage": "https://www.getlibretto.com/",
   "scripts": {
@@ -33,7 +33,7 @@
     "typescript": "^5.4.5"
   },
   "peerDependencies": {
-    "openai": "^4.40.1"
+    "@anthropic-ai/sdk": "^0.21.1"
   },
   "dependencies": {
     "redact-pii-light": "^1.0.0"
