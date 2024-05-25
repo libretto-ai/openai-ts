@@ -1,6 +1,6 @@
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
-export interface OpenAIExtraParams {
+export interface AnthropicExtraParams {
   apiKey?: string;
   promptTemplateName?: string;
   allowUnnamedPrompts?: boolean;
@@ -10,5 +10,5 @@ export interface OpenAIExtraParams {
   templateParams?: Record<string, any>;
   chatId?: string;
   parentEventId?: string;
-  OpenAI?: typeof OpenAI;
+  Anthropic?: typeof Anthropic;
 }
