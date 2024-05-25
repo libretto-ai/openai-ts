@@ -53,7 +53,7 @@ export class LibrettoCompletions extends Anthropic.Completions {
     Anthropic.Completions.Completion | Stream<Anthropic.Completions.Completion>
   > {
     const now = Date.now();
-    const { libretto, prompt, stream, ...openaiBody } = body;
+    const { libretto, prompt, stream, ...anthropicBody } = body;
 
     const { prompt: resolvedPrompt, template } = getResolvedPrompt(
       prompt,
@@ -61,7 +61,7 @@ export class LibrettoCompletions extends Anthropic.Completions {
     );
 
     const resultPromise = super.create(
-      { ...openaiBody, prompt: resolvedPrompt, stream },
+      { ...anthropicBody, prompt: resolvedPrompt, stream },
       options,
     ) as
       | APIPromise<Anthropic.Completions.Completion>
@@ -125,7 +125,7 @@ export class LibrettoCompletions extends Anthropic.Completions {
         modelParameters: {
           modelProvider: "anthropic",
           modelType: "completion",
-          ...openaiBody,
+          ...anthropicBody,
         },
       });
     });
