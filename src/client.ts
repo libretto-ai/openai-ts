@@ -1,4 +1,5 @@
 import _Anthropic, { ClientOptions } from "@anthropic-ai/sdk";
+import { LibrettoCompletions } from "./completions";
 import { LibrettoMessages } from "./messages";
 
 export class Anthropic extends _Anthropic {
@@ -7,6 +8,6 @@ export class Anthropic extends _Anthropic {
 
     const config = opts?.libretto ?? {};
     this.messages = new LibrettoMessages(this, config);
-    // this.beta = new LibrettoBeta(this, config);
+    this.completions = new LibrettoCompletions(this, config);
   }
 }
