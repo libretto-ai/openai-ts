@@ -27,8 +27,9 @@ async function main() {
   }
   console.log("Testing Streaming Completion API...");
   const completion2 = await anthropic.completions.create({
-    prompt: f`Tell a 20 word story about {name}` as unknown as string,
-    model: "davinci",
+    prompt:
+      f`\n\nHuman: Tell a 20 word story about {name}\n\n Assistant:` as unknown as string,
+    model: "claude-2.1",
     stream: true,
     max_tokens_to_sample: 1024,
     libretto: {
