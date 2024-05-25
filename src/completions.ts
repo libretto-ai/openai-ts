@@ -1,24 +1,17 @@
+import Anthropic from "@anthropic-ai/sdk";
+import Core, { APIPromise } from "@anthropic-ai/sdk/core";
+import { CompletionCreateParamsBase } from "@anthropic-ai/sdk/resources/completions";
+import { Stream } from "@anthropic-ai/sdk/streaming";
 import crypto from "crypto";
-import Core, { OpenAI } from "openai";
-import { APIPromise } from "openai/core";
-import {
-  Completion,
-  CompletionCreateParams,
-  CompletionCreateParamsBase,
-  CompletionCreateParamsNonStreaming,
-  CompletionCreateParamsStreaming,
-  Completions,
-} from "openai/resources/completions";
-import { Stream } from "openai/streaming";
 import { LibrettoConfig, send_event } from ".";
 import { PiiRedactor } from "./pii";
 import { getResolvedPrompt, getResolvedStream } from "./resolvers";
 
-export class LibrettoCompletions extends Completions {
+export class LibrettoCompletions extends Anthropic.Completions {
   protected piiRedactor?: PiiRedactor;
 
   constructor(
-    client: OpenAI,
+    client: Anthropic,
     protected config: LibrettoConfig,
   ) {
     super(client);
@@ -29,30 +22,36 @@ export class LibrettoCompletions extends Completions {
   }
 
   override create(
-    body: CompletionCreateParamsNonStreaming,
+    body: Anthropic.Completions.CompletionCreateParamsNonStreaming,
     options?: Core.RequestOptions,
-  ): APIPromise<Completion>;
+  ): APIPromise<Anthropic.Completions.Completion>;
   override create(
-    body: CompletionCreateParamsStreaming,
+    body: Anthropic.Completions.CompletionCreateParamsStreaming,
     options?: Core.RequestOptions,
-  ): APIPromise<Stream<Completion>>;
+  ): APIPromise<Stream<Anthropic.Completions.Completion>>;
   override create(
     body: CompletionCreateParamsBase,
     options?: Core.RequestOptions,
-  ): APIPromise<Stream<Completion> | Completion>;
+  ): APIPromise<
+    Stream<Anthropic.Completions.Completion> | Anthropic.Completions.Completion
+  >;
   override create(
-    body: CompletionCreateParams,
+    body: Anthropic.Completions.CompletionCreateParams,
     options?: Core.RequestOptions,
-  ): APIPromise<Completion> | APIPromise<Stream<Completion>> {
+  ):
+    | APIPromise<Anthropic.Completions.Completion>
+    | APIPromise<Stream<Anthropic.Completions.Completion>> {
     return this._create(body, options) as
-      | APIPromise<Completion>
-      | APIPromise<Stream<Completion>>;
+      | APIPromise<Anthropic.Completions.Completion>
+      | APIPromise<Stream<Anthropic.Completions.Completion>>;
   }
 
   private async _create(
-    body: CompletionCreateParams,
+    body: Anthropic.Completions.CompletionCreateParams,
     options?: Core.RequestOptions,
-  ): Promise<Completion | Stream<Completion>> {
+  ): Promise<
+    Anthropic.Completions.Completion | Stream<Anthropic.Completions.Completion>
+  > {
     const now = Date.now();
     const { libretto, prompt, stream, ...openaiBody } = body;
 
@@ -64,7 +63,9 @@ export class LibrettoCompletions extends Completions {
     const resultPromise = super.create(
       { ...openaiBody, prompt: resolvedPrompt, stream },
       options,
-    ) as APIPromise<Completion> | APIPromise<Stream<Completion>>;
+    ) as
+      | APIPromise<Anthropic.Completions.Completion>
+      | APIPromise<Stream<Anthropic.Completions.Completion>>;
 
     const resolvedPromptStr = Array.isArray(resolvedPrompt)
       ? null
@@ -86,53 +87,51 @@ export class LibrettoCompletions extends Completions {
     );
 
     // note: not awaiting the result of this
-    finalResultPromise.then(
-      async ({ response, finish_reason, logprobs, usage }) => {
-        const responseTime = Date.now() - now;
-        let params = libretto?.templateParams ?? {};
+    finalResultPromise.then(async ({ response, stop_reason, usage }) => {
+      const responseTime = Date.now() - now;
+      let params = libretto?.templateParams ?? {};
 
-        // Redact PII before recording the event
-        if (this.piiRedactor) {
-          try {
-            response = this.piiRedactor.redact(response);
-            params = this.piiRedactor.redact(params);
-          } catch (err) {
-            console.log("Failed to redact PII", err);
-          }
+      // Redact PII before recording the event
+      if (this.piiRedactor) {
+        try {
+          response = this.piiRedactor.redact(response);
+          params = this.piiRedactor.redact(params);
+        } catch (err) {
+          console.log("Failed to redact PII", err);
         }
+      }
 
-        await send_event({
-          responseTime,
-          response,
-          responseMetrics: {
-            usage,
-            finish_reason,
-            logprobs,
-          },
-          params: params,
-          apiKey:
-            libretto?.apiKey ??
-            this.config.apiKey ??
-            process.env.LIBRETTO_API_KEY,
-          promptTemplateText:
-            libretto?.templateText ?? template ?? resolvedPromptStr,
-          promptTemplateName: resolvedPromptTemplateName,
-          apiName:
-            libretto?.promptTemplateName ?? this.config.promptTemplateName,
-          prompt: {},
-          chatId: libretto?.chatId ?? this.config.chatId,
-          parentEventId: libretto?.parentEventId,
-          context: libretto?.context,
-          feedbackKey,
-          modelParameters: {
-            modelProvider: "openai",
-            modelType: "completion",
-            ...openaiBody,
-          },
-        });
-      },
-    );
+      await send_event({
+        responseTime,
+        response,
+        responseMetrics: {
+          usage,
+          stop_reason,
+        },
+        params: params,
+        apiKey:
+          libretto?.apiKey ??
+          this.config.apiKey ??
+          process.env.LIBRETTO_API_KEY,
+        promptTemplateText:
+          libretto?.templateText ?? template ?? resolvedPromptStr,
+        promptTemplateName: resolvedPromptTemplateName,
+        apiName: libretto?.promptTemplateName ?? this.config.promptTemplateName,
+        prompt: {},
+        chatId: libretto?.chatId ?? this.config.chatId,
+        parentEventId: libretto?.parentEventId,
+        context: libretto?.context,
+        feedbackKey,
+        modelParameters: {
+          modelProvider: "anthropic",
+          modelType: "completion",
+          ...openaiBody,
+        },
+      });
+    });
 
-    return returnValue as Completion | Stream<Completion>;
+    return returnValue as
+      | Anthropic.Completions.Completion
+      | Stream<Anthropic.Completions.Completion>;
   }
 }

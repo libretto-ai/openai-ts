@@ -103,7 +103,7 @@ export class LibrettoMessages extends API.Messages {
         response,
         responseMetrics: {
           usage,
-          stop_reason: stop_reason as Message["stop_reason"] | undefined | null,
+          stop_reason: stop_reason,
         },
         params: params,
         apiKey:

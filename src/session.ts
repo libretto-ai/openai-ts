@@ -54,7 +54,11 @@ export interface PromptEvent {
 
   responseMetrics?: {
     usage: Anthropic.Messages.Usage | undefined;
-    stop_reason: Anthropic.Messages.Message["stop_reason"] | undefined | null;
+    stop_reason:
+      | Anthropic.Messages.Message["stop_reason"]
+      | Anthropic.Completions.Completion["stop_reason"]
+      | undefined
+      | null;
   };
   // eslint-disable-next-line @typescript-eslint/ban-types
   prompt: {}; //hack

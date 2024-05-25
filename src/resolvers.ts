@@ -6,17 +6,10 @@ import { ObjectTemplate } from "./template";
 interface ResolvedAPIResult {
   response: string | null | undefined;
   usage?: Anthropic.Messages.Usage | undefined;
-  stop_reason?: string | null;
-  // finish_reason: Anthropic.MessageStopEvent
-  //   | OpenAI.Completions.CompletionChoice["finish_reason"]
-  //   | OpenAI.ChatCompletion.Choice["finish_reason"]
-  //   | undefined
-  //   | null;
-  // logprobs:
-  //   | OpenAI.Completions.CompletionChoice.Logprobs
-  //   | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
-  //   | undefined
-  //   | null;
+  stop_reason?:
+    | Anthropic.Completions.Completion["stop_reason"]
+    | Anthropic.Messages.Message["stop_reason"]
+    | null;
 }
 
 /** This function papers over the difference between streamed and unstreamed
@@ -84,7 +77,7 @@ export async function getResolvedStream(
   };
 }
 
-type PromptString = string | string[] | number[] | number[][] | null;
+type PromptString = string | string[] | number[] | number[][];
 
 function getStaticChatCompletion(
   result: Anthropic.Messages.Message,
