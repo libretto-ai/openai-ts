@@ -77,7 +77,7 @@ export class LibrettoMessages extends _Anthropic.Messages {
       resultPromise,
       stream,
       feedbackKey,
-      false,
+      true,
     );
 
     // note: not awaiting the result of this
