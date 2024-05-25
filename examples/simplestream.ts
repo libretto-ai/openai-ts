@@ -8,7 +8,7 @@ async function main() {
   });
 
   console.log("Testing Streaming Chat API...");
-  const completion = await anthropic.messages.create({
+  const messages = await anthropic.messages.create({
     messages: objectTemplate([
       { role: "user", content: "Tell a 20 word story about {name}" },
     ]) as any,
@@ -21,12 +21,12 @@ async function main() {
       feedbackKey: crypto.randomUUID(),
     },
   });
-  console.log("got completion: ", completion);
-  for await (const result of completion) {
-    console.log("Streamed Chat API replied with: ", result);
+  console.log("got completion: ", messages);
+  for await (const message of messages) {
+    console.log("Streamed Chat API replied with: ", message);
   }
   console.log("Testing Streaming Completion API...");
-  const completion2 = await anthropic.completions.create({
+  const completion = await anthropic.completions.create({
     prompt:
       f`\n\nHuman: Tell a 20 word story about {name}\n\n Assistant:` as unknown as string,
     model: "claude-2.1",
@@ -38,7 +38,7 @@ async function main() {
       feedbackKey: crypto.randomUUID(),
     },
   });
-  for await (const result of completion2) {
+  for await (const result of completion) {
     console.log("Streamed Completion API replied with: ", result);
   }
 }
