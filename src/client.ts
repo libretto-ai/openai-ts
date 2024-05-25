@@ -1,4 +1,3 @@
-// import { ClientOptions, OpenAI as _OpenAI } from "openai";
 import _Anthropic, { ClientOptions } from "@anthropic-ai/sdk";
 import { LibrettoMessages } from "./messages";
 

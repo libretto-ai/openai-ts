@@ -1,7 +1,3 @@
-// import OpenAI from "openai";
-// import { APIPromise } from "openai/core";
-// import { ChatCompletionMessageParam } from "openai/resources/chat";
-// import { Stream } from "openai/streaming";
 import Anthropic from "@anthropic-ai/sdk";
 import { APIPromise } from "@anthropic-ai/sdk/core";
 import { Stream } from "@anthropic-ai/sdk/streaming";
