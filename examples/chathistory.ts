@@ -1,18 +1,17 @@
 import { objectTemplate } from "../src";
-import { OpenAI } from "../src/client";
+import { Anthropic } from "../src/client";
 
 async function main() {
-  const openai = new OpenAI({
+  const anthropic = new Anthropic({
     // apiKey: process.env.OPENAI_API_KEY
   });
 
   console.log("Testing Chat API with chat history...");
-  const completion = await openai.chat.completions.create({
+  const completion = await anthropic.messages.create({
+    system: `My role is to be the AI Coach Supervisor to help guide the coach. 
+    I will receive a question from the coach, and I will guide them on the content 
+    and quality of the question.`,
     messages: objectTemplate([
-      {
-        role: "system",
-        content: `My role is to be the AI Coach Supervisor to help guide the coach. I will receive a question from the coach, and I will guide them on the content and quality of the question.`,
-      },
       {
         role: "chat_history",
         content: "{prev_messages} {second_history}",
@@ -22,7 +21,8 @@ async function main() {
         content: "{coach_question}",
       },
     ]) as any,
-    model: "gpt-3.5-turbo",
+    model: "claude-3-haiku-20240307",
+    max_tokens: 1024,
     temperature: 1,
     libretto: {
       promptTemplateName: "AI Supervisor",
@@ -55,7 +55,7 @@ async function main() {
       },
     },
   });
-  console.log("Chat API with chat historyreplied with: ", completion.choices);
+  console.log("Chat API with chat historyreplied with: ", completion);
 }
 
 main()
