@@ -213,7 +213,7 @@ class WrappedStream<
     isChat: boolean | undefined,
     feedbacKey: string,
   ) {
-    super((innerStream as any).response, (innerStream as any).controller);
+    super((innerStream as any).iterator, innerStream.controller);
     this.isChat = !!isChat;
     this.finishPromise = new Promise((r) => (this.resolveIterator = r));
     this.feedbackKey = feedbacKey;
