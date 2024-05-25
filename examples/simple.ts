@@ -1,37 +1,38 @@
 import { f, objectTemplate } from "../src";
-import { OpenAI } from "../src/client";
+import { Anthropic } from "../src/client";
 
 async function main() {
-  const openai = new OpenAI({
+  const anthropic = new Anthropic({
     // apiKey: process.env.OPENAI_API_KEY
   });
 
   console.log("Testing Chat API...");
-  const completion = await openai.chat.completions.create({
+  const messages = await anthropic.messages.create({
     messages: objectTemplate([
       { role: "user", content: "Say this is a test to {name}" },
     ]) as any,
-    model: "gpt-3.5-turbo",
+    max_tokens: 1024,
+    model: "claude-3-haiku-20240307",
     libretto: {
       promptTemplateName: "ts-client-test-chat",
       templateParams: { name: "John" },
     },
   });
-  console.log("Chat API replied with: ", completion.choices);
+  console.log("Chat API replied with: ", messages.content);
 
   console.log("Testing Completion API...");
-  const completion2P = openai.completions.create({
-    prompt: f`Say this is a test to {name}` as unknown as string,
-    model: "text-davinci-003",
+  const completion = await anthropic.completions.create({
+    prompt:
+      f`\n\nHuman: Say this is a test to {name}\n\nAssistant:` as unknown as string,
+    model: "claude-2.1",
+    max_tokens_to_sample: 1024,
     libretto: {
       promptTemplateName: "ts-client-test-completion",
       templateParams: { name: "John" },
     },
   });
-  console.log("awaiting result...");
-  const completion2 = await completion2P;
 
-  console.log("Completion API replied with: ", completion2);
+  console.log("Completion API replied with: ", completion);
 }
 
 main()

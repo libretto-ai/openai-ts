@@ -1,17 +1,17 @@
-import Anthropic from "@anthropic-ai/sdk";
+import _Anthropic from "@anthropic-ai/sdk";
 import Core, { APIPromise } from "@anthropic-ai/sdk/core";
-import { CompletionCreateParamsBase } from "@anthropic-ai/sdk/resources/completions";
+import { MessageCreateParamsBase } from "@anthropic-ai/sdk/resources/messages";
 import { Stream } from "@anthropic-ai/sdk/streaming";
 import crypto from "crypto";
 import { LibrettoConfig, send_event } from ".";
 import { PiiRedactor } from "./pii";
-import { getResolvedPrompt, getResolvedStream } from "./resolvers";
+import { getResolvedMessages, getResolvedStream } from "./resolvers";
 
-export class LibrettoCompletions extends Anthropic.Completions {
+export class LibrettoMessages extends _Anthropic.Messages {
   protected piiRedactor?: PiiRedactor;
 
   constructor(
-    client: Anthropic,
+    client: _Anthropic,
     protected config: LibrettoConfig,
   ) {
     super(client);
@@ -22,54 +22,48 @@ export class LibrettoCompletions extends Anthropic.Completions {
   }
 
   override create(
-    body: Anthropic.Completions.CompletionCreateParamsNonStreaming,
+    body: _Anthropic.Messages.MessageCreateParamsNonStreaming,
     options?: Core.RequestOptions,
-  ): APIPromise<Anthropic.Completions.Completion>;
+  ): APIPromise<_Anthropic.Messages.Message>;
   override create(
-    body: Anthropic.Completions.CompletionCreateParamsStreaming,
+    body: _Anthropic.Messages.MessageCreateParamsStreaming,
     options?: Core.RequestOptions,
-  ): APIPromise<Stream<Anthropic.Completions.Completion>>;
+  ): APIPromise<Stream<_Anthropic.Messages.MessageStreamEvent>>;
   override create(
-    body: CompletionCreateParamsBase,
+    body: MessageCreateParamsBase,
     options?: Core.RequestOptions,
   ): APIPromise<
-    Stream<Anthropic.Completions.Completion> | Anthropic.Completions.Completion
+    Stream<_Anthropic.Messages.MessageStreamEvent> | _Anthropic.Messages.Message
   >;
   override create(
-    body: Anthropic.Completions.CompletionCreateParams,
+    body: _Anthropic.Messages.MessageCreateParams,
     options?: Core.RequestOptions,
   ):
-    | APIPromise<Anthropic.Completions.Completion>
-    | APIPromise<Stream<Anthropic.Completions.Completion>> {
+    | APIPromise<_Anthropic.Messages.Message>
+    | APIPromise<Stream<_Anthropic.Messages.MessageStreamEvent>> {
     return this._create(body, options) as
-      | APIPromise<Anthropic.Completions.Completion>
-      | APIPromise<Stream<Anthropic.Completions.Completion>>;
+      | APIPromise<Stream<_Anthropic.Messages.MessageStreamEvent>>
+      | APIPromise<_Anthropic.Messages.Message>;
   }
 
   private async _create(
-    body: Anthropic.Completions.CompletionCreateParams,
+    body: _Anthropic.Messages.MessageCreateParams,
     options?: Core.RequestOptions,
   ): Promise<
-    Anthropic.Completions.Completion | Stream<Anthropic.Completions.Completion>
+    _Anthropic.Messages.Message | Stream<_Anthropic.Messages.MessageStreamEvent>
   > {
     const now = Date.now();
-    const { libretto, prompt, stream, ...anthropicBody } = body;
+    const { libretto, messages, stream, ...anthropicBody } = body;
 
-    const { prompt: resolvedPrompt, template } = getResolvedPrompt(
-      prompt,
+    const { messages: resolvedMessages, template } = getResolvedMessages(
+      messages,
       libretto?.templateParams,
     );
 
     const resultPromise = super.create(
-      { ...anthropicBody, prompt: resolvedPrompt, stream },
+      { ...anthropicBody, messages: resolvedMessages, stream },
       options,
-    ) as
-      | APIPromise<Anthropic.Completions.Completion>
-      | APIPromise<Stream<Anthropic.Completions.Completion>>;
-
-    const resolvedPromptStr = Array.isArray(resolvedPrompt)
-      ? null
-      : resolvedPrompt;
+    );
 
     const resolvedPromptTemplateName =
       libretto?.promptTemplateName ?? this.config.promptTemplateName;
@@ -83,7 +77,7 @@ export class LibrettoCompletions extends Anthropic.Completions {
       resultPromise,
       stream,
       feedbackKey,
-      false,
+      true,
     );
 
     // note: not awaiting the result of this
@@ -106,15 +100,15 @@ export class LibrettoCompletions extends Anthropic.Completions {
         response,
         responseMetrics: {
           usage,
-          stop_reason,
+          stop_reason: stop_reason,
         },
         params: params,
         apiKey:
           libretto?.apiKey ??
           this.config.apiKey ??
           process.env.LIBRETTO_API_KEY,
-        promptTemplateText:
-          libretto?.templateText ?? template ?? resolvedPromptStr,
+        promptTemplateChat:
+          libretto?.templateChat ?? template ?? resolvedMessages,
         promptTemplateName: resolvedPromptTemplateName,
         apiName: libretto?.promptTemplateName ?? this.config.promptTemplateName,
         prompt: {},
@@ -124,14 +118,14 @@ export class LibrettoCompletions extends Anthropic.Completions {
         feedbackKey,
         modelParameters: {
           modelProvider: "anthropic",
-          modelType: "completion",
+          modelType: "chat",
           ...anthropicBody,
         },
       });
     });
 
     return returnValue as
-      | Anthropic.Completions.Completion
-      | Stream<Anthropic.Completions.Completion>;
+      | _Anthropic.Messages.Message
+      | Stream<_Anthropic.Messages.MessageStreamEvent>;
   }
 }

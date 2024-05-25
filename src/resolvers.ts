@@ -1,21 +1,14 @@
-import OpenAI from "openai";
-import { APIPromise } from "openai/core";
-import { ChatCompletionMessageParam } from "openai/resources/chat";
-import { Stream } from "openai/streaming";
+import Anthropic from "@anthropic-ai/sdk";
+import { APIPromise } from "@anthropic-ai/sdk/core";
+import { Stream } from "@anthropic-ai/sdk/streaming";
 import { ObjectTemplate } from "./template";
 
 interface ResolvedAPIResult {
   response: string | null | undefined;
-  usage: OpenAI.Completions.CompletionUsage | undefined;
-  finish_reason:
-    | OpenAI.Completions.CompletionChoice["finish_reason"]
-    | OpenAI.ChatCompletion.Choice["finish_reason"]
-    | undefined
-    | null;
-  logprobs:
-    | OpenAI.Completions.CompletionChoice.Logprobs
-    | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
-    | undefined
+  usage?: Anthropic.Messages.Usage | undefined;
+  stop_reason?:
+    | Anthropic.Completions.Completion["stop_reason"]
+    | Anthropic.Messages.Message["stop_reason"]
     | null;
 }
 
@@ -29,26 +22,26 @@ interface ResolvedAPIResult {
  */
 export async function getResolvedStream(
   resultPromise: APIPromise<
-    | Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
-    | Stream<OpenAI.Completions.Completion>
-    | OpenAI.Chat.Completions.ChatCompletion
-    | OpenAI.Completions.Completion
+    | Stream<Anthropic.Messages.MessageStreamEvent>
+    | Stream<Anthropic.Completions.Completion>
+    | Anthropic.Messages.Message
+    | Anthropic.Completions.Completion
   >,
   stream: boolean | null | undefined,
   feedbackKey: string,
   isChat: boolean,
 ): Promise<{
   returnValue:
-    | Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
-    | Stream<OpenAI.Completions.Completion>
-    | OpenAI.Chat.Completions.ChatCompletion
-    | OpenAI.Completions.Completion;
+    | Stream<Anthropic.Messages.MessageStreamEvent>
+    | Stream<Anthropic.Completions.Completion>
+    | Anthropic.Messages.Message
+    | Anthropic.Completions.Completion;
   finalResultPromise: Promise<ResolvedAPIResult>;
 }> {
   if (stream) {
     const chunkStream = (await resultPromise) as
-      | Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
-      | Stream<OpenAI.Completions.Completion>;
+      | Stream<Anthropic.Messages.MessageStreamEvent>
+      | Stream<Anthropic.Completions.Completion>;
     const wrappedStream = new WrappedStream(
       chunkStream as Stream<any>,
       isChat,
@@ -61,8 +54,8 @@ export async function getResolvedStream(
     // TODO: deal with streamed completions
   }
   const staticResult = (await resultPromise) as
-    | OpenAI.Chat.Completions.ChatCompletion
-    | OpenAI.Completions.Completion;
+    | Anthropic.Messages.Message
+    | Anthropic.Completions.Completion;
   if (!staticResult.libretto) {
     staticResult.libretto = {};
   }
@@ -72,91 +65,89 @@ export async function getResolvedStream(
     return {
       returnValue: await resultPromise,
       finalResultPromise: Promise.resolve(
-        getStaticChatCompletion(
-          staticResult as OpenAI.Chat.Completions.ChatCompletion,
-        ),
+        getStaticChatCompletion(staticResult as Anthropic.Messages.Message),
       ),
     };
   }
   return {
     returnValue: await resultPromise,
     finalResultPromise: Promise.resolve(
-      getStaticCompletion(staticResult as OpenAI.Completions.Completion),
+      getStaticCompletion(staticResult as Anthropic.Completions.Completion),
     ),
   };
 }
 
-type PromptString = string | string[] | number[] | number[][] | null;
+type PromptString = string | string[] | number[] | number[][];
 
 function getStaticChatCompletion(
-  result: OpenAI.Chat.Completions.ChatCompletion,
+  result: Anthropic.Messages.Message,
 ): ResolvedAPIResult {
-  if (result.choices[0].message.content) {
+  if (result.content && result.content[0].type === "text") {
     return {
-      response: result.choices[0].message.content,
+      response: result.content[0].text,
       usage: result.usage,
-      finish_reason: result.choices[0].finish_reason,
-      logprobs: result.choices[0].logprobs,
+      stop_reason: result.stop_reason,
     };
   }
-  if (result.choices[0].message.function_call) {
-    return {
-      response: JSON.stringify({
-        function_call: result.choices[0].message.function_call,
-      }),
-      usage: result.usage,
-      finish_reason: result.choices[0].finish_reason,
-      logprobs: result.choices[0].logprobs,
-    };
-  }
-  if (result.choices[0].message.tool_calls) {
-    return {
-      response: JSON.stringify({
-        tool_calls: result.choices[0].message.tool_calls,
-      }),
-      usage: result.usage,
-      finish_reason: result.choices[0].finish_reason,
-      logprobs: result.choices[0].logprobs,
-    };
-  }
+  // if (result.choices[0].message.function_call) {
+  //   return {
+  //     response: JSON.stringify({
+  //       function_call: result.choices[0].message.function_call,
+  //     }),
+  //     usage: result.usage,
+  //     finish_reason: result.choices[0].finish_reason,
+  //     logprobs: result.choices[0].logprobs,
+  //   };
+  // }
+  // if (result.choices[0].message.tool_calls) {
+  //   return {
+  //     response: JSON.stringify({
+  //       tool_calls: result.choices[0].message.tool_calls,
+  //     }),
+  //     usage: result.usage,
+  //     finish_reason: result.choices[0].finish_reason,
+  //     logprobs: result.choices[0].logprobs,
+  //   };
+  // }
   return {
     response: undefined,
     usage: result.usage,
-    finish_reason: result.choices[0].finish_reason,
-    logprobs: result.choices[0].logprobs,
+    stop_reason: result.stop_reason,
   };
 }
 
 function getStaticCompletion(
-  result: OpenAI.Completions.Completion | null,
+  result: Anthropic.Completion | null,
 ): ResolvedAPIResult {
   if (!result) {
     return {
       response: null,
       usage: undefined,
-      finish_reason: undefined,
-      logprobs: undefined,
+      stop_reason: undefined,
+      // logprobs: undefined,
     };
   }
-  if (result.choices[0].text) {
+  if (result.completion) {
     return {
-      response: result.choices[0].text,
-      usage: result.usage,
-      finish_reason: result.choices[0].finish_reason,
-      logprobs: result.choices[0].logprobs,
+      response: result.completion,
+      stop_reason: result.stop_reason,
+      // usage: result.usage,
+      // finish_reason: result.choices[0].finish_reason,
+      // logprobs: result.choices[0].logprobs,
     };
   }
   return {
     response: undefined,
-    usage: result.usage,
-    finish_reason: undefined,
-    logprobs: result.choices[0].logprobs,
+    stop_reason: undefined,
+    // usage: result.usage,
+    // finish_reason: undefined,
+    // logprobs: result.choices[0].logprobs,
   };
 }
 export function getResolvedMessages(
   messages:
-    | ChatCompletionMessageParam[]
-    | ObjectTemplate<ChatCompletionMessageParam[]>,
+    | Anthropic.Messages.MessageParam[]
+    | ObjectTemplate<Anthropic.Messages.MessageParam[]>,
   params?: Record<string, any>,
 ) {
   if ("template" in messages && "format" in messages) {
@@ -201,21 +192,17 @@ export function getResolvedPrompt(
 
 class WrappedStream<
   T extends
-    | OpenAI.Chat.Completions.ChatCompletionChunk
-    | OpenAI.Completions.Completion,
+    | Anthropic.Completions.Completion
+    | Anthropic.Messages.MessageStreamEvent,
 > extends Stream<T> {
   finishPromise: Promise<ResolvedAPIResult>;
   private resolveIterator!: (v: ResolvedAPIResult) => void;
   private accumulatedResult: string[] = [];
-  private responseUsage: OpenAI.Completions.CompletionUsage | undefined;
+  private responseUsage: Anthropic.Messages.Usage | undefined;
   private finishReason:
-    | OpenAI.Completions.CompletionChoice["finish_reason"]
-    | OpenAI.ChatCompletion.Choice["finish_reason"]
-    | undefined
-    | null;
-  private logProbs:
-    | OpenAI.Completions.CompletionChoice.Logprobs
-    | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
+    | Anthropic.Messages.Message["stop_reason"]
+    | Anthropic.Messages.MessageDeltaEvent.Delta["stop_reason"]
+    | Anthropic.Completions.Completion["stop_reason"]
     | undefined
     | null;
   isChat: boolean;
@@ -226,7 +213,7 @@ class WrappedStream<
     isChat: boolean | undefined,
     feedbacKey: string,
   ) {
-    super((innerStream as any).response, (innerStream as any).controller);
+    super((innerStream as any).iterator, innerStream.controller);
     this.isChat = !!isChat;
     this.finishPromise = new Promise((r) => (this.resolveIterator = r));
     this.feedbackKey = feedbacKey;
@@ -241,32 +228,30 @@ class WrappedStream<
     try {
       for await (const item of iterable) {
         if (this.isChat) {
-          const chatItem = item as OpenAI.Chat.Completions.ChatCompletionChunk;
+          const chatItem = item as Anthropic.Messages.MessageStreamEvent;
           if (!chatItem.libretto) {
             chatItem.libretto = {};
           }
           chatItem.libretto.feedbackKey = this.feedbackKey;
-          if (chatItem.choices[0].delta.content) {
-            this.accumulatedResult.push(chatItem.choices[0].delta.content);
-          } else if (chatItem.choices[0].delta.function_call) {
-            this.accumulatedResult.push(
-              JSON.stringify(chatItem.choices[0].delta.function_call),
-            );
+          if (chatItem.type === "content_block_delta") {
+            this.accumulatedResult.push(chatItem.delta.text);
+            // } else if (chatItem.choices[0].delta.function_call) {
+            //   this.accumulatedResult.push(
+            //     JSON.stringify(chatItem.choices[0].delta.function_call),
+            //   );
           }
-          this.finishReason = chatItem.choices[0].finish_reason;
-          // TODO: get usage from streaming chat. This is currently missing from the API!
-          // https://community.openai.com/t/openai-api-get-usage-tokens-in-response-when-set-stream-true/141866
-          // https://community.openai.com/t/chat-completion-stream-api-token-usage/352964
+          if (chatItem.type === "message_delta" && chatItem.delta.stop_reason) {
+            this.finishReason = chatItem.delta.stop_reason;
+          }
+          // TODO: get usage from streaming chat.
         } else {
-          const completionItem = item as OpenAI.Completions.Completion;
+          const completionItem = item as Anthropic.Completions.Completion;
           if (!completionItem.libretto) {
             completionItem.libretto = {};
           }
           completionItem.libretto.feedbackKey = this.feedbackKey;
-          this.accumulatedResult.push(completionItem.choices[0].text);
-          this.responseUsage = completionItem.usage;
-          this.finishReason = completionItem.choices[0].finish_reason;
-          this.logProbs = completionItem.choices[0].logprobs;
+          this.accumulatedResult.push(completionItem.completion);
+          this.finishReason = completionItem.stop_reason;
         }
         yield item;
       }
@@ -274,8 +259,7 @@ class WrappedStream<
       this.resolveIterator({
         response: this.accumulatedResult.join(""),
         usage: this.responseUsage,
-        finish_reason: this.finishReason,
-        logprobs: this.logProbs,
+        stop_reason: this.finishReason,
       });
     }
   }

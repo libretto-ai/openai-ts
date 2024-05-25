@@ -1,6 +1,5 @@
-import { ChatCompletionMessage } from "openai/resources/chat";
-
-export { OpenAI } from "./client";
+import _Anthropic from "@anthropic-ai/sdk";
+export { Anthropic } from "./client";
 export { Event, Feedback, sendFeedback, send_event } from "./session";
 export { f, objectTemplate } from "./template";
 
@@ -16,7 +15,7 @@ type LibrettoCreateParams = {
   apiKey?: string;
   promptTemplateName?: string;
   templateText?: string;
-  templateChat?: ChatCompletionMessage[];
+  templateChat?: _Anthropic.Message[];
   templateParams?: Record<string, any>;
   chatId?: string;
   parentEventId?: string;
@@ -35,38 +34,48 @@ export type LibrettoRunCreateParams = {
   promptTemplateName?: string;
 };
 
-declare module "openai" {
+declare module "@anthropic-ai/sdk" {
   interface ClientOptions {
     libretto?: LibrettoConfig;
   }
 }
 
-declare module "openai/resources/chat/completions" {
-  interface ChatCompletionCreateParamsBase {
+declare module "@anthropic-ai/sdk/resources/messages" {
+  interface MessageCreateParamsBase {
     libretto?: LibrettoCreateParams;
   }
 
-  interface ChatCompletionChunk {
+  interface Message {
     libretto?: LibrettoCompletion;
   }
 
-  interface ChatCompletion {
+  interface MessageStartEvent {
+    libretto?: LibrettoCompletion;
+  }
+  interface MessageDeltaEvent {
+    libretto?: LibrettoCompletion;
+  }
+  interface MessageStopEvent {
+    libretto?: LibrettoCompletion;
+  }
+  interface ContentBlockStartEvent {
+    libretto?: LibrettoCompletion;
+  }
+
+  interface ContentBlockDeltaEvent {
+    libretto?: LibrettoCompletion;
+  }
+  interface ContentBlockStopEvent {
     libretto?: LibrettoCompletion;
   }
 }
 
-declare module "openai/resources/completions" {
+declare module "@anthropic-ai/sdk/resources/completions" {
   interface CompletionCreateParamsBase {
     libretto?: LibrettoCreateParams;
   }
 
   interface Completion {
     libretto?: LibrettoCompletion;
-  }
-}
-
-declare module "openai/resources/beta/threads/runs/runs" {
-  interface RunCreateParamsBase {
-    libretto?: LibrettoRunCreateParams;
   }
 }

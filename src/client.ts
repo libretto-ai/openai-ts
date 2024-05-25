@@ -1,15 +1,13 @@
-import { ClientOptions, OpenAI as _OpenAI } from "openai";
-import { LibrettoBeta } from "./beta";
-import { LibrettoChat } from "./chat";
+import _Anthropic, { ClientOptions } from "@anthropic-ai/sdk";
 import { LibrettoCompletions } from "./completions";
+import { LibrettoMessages } from "./messages";
 
-export class OpenAI extends _OpenAI {
+export class Anthropic extends _Anthropic {
   constructor(opts?: ClientOptions) {
     super(opts);
 
     const config = opts?.libretto ?? {};
+    this.messages = new LibrettoMessages(this, config);
     this.completions = new LibrettoCompletions(this, config);
-    this.chat = new LibrettoChat(this, config);
-    this.beta = new LibrettoBeta(this, config);
   }
 }

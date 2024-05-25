@@ -1,9 +1,4 @@
-import OpenAI from "openai";
-import {
-  type CompletionCreateParamsNonStreaming,
-  type CompletionUsage,
-} from "openai/resources";
-import { type ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat";
+import Anthropic from "@anthropic-ai/sdk";
 
 function getUrl(apiName: string, environmentName: string): string {
   if (process.env[environmentName]) {
@@ -14,17 +9,22 @@ function getUrl(apiName: string, environmentName: string): string {
   return `${prefix}/${apiName}`;
 }
 
-interface OpenAIChatParameters
-  extends Omit<ChatCompletionCreateParamsNonStreaming, "messages"> {
-  modelProvider: "openai";
+interface AnthropicMessagesParameters
+  extends Omit<Anthropic.Messages.MessageCreateParamsNonStreaming, "messages"> {
+  modelProvider: "anthropic";
   modelType: "chat";
 }
-interface OpenAICompletionParameters
-  extends Omit<CompletionCreateParamsNonStreaming, "prompt"> {
-  modelProvider: "openai";
+interface AnthropicCompletionParameters
+  extends Omit<
+    Anthropic.Completions.CompletionCreateParamsNonStreaming,
+    "prompt"
+  > {
+  modelProvider: "anthropic";
   modelType: "completion";
 }
-export type ModelParameters = OpenAIChatParameters | OpenAICompletionParameters;
+export type ModelParameters =
+  | AnthropicMessagesParameters
+  | AnthropicCompletionParameters;
 
 /**
  *
@@ -49,19 +49,14 @@ export interface PromptEvent {
   response?: string | null;
   /** Response time in ms */
   responseTime?: number;
-  /** Included only if there is an error from openai, or error in validation */
+  /** Included only if there is an error from Anthropic, or error in validation */
   responseErrors?: string[];
 
   responseMetrics?: {
-    usage: CompletionUsage | undefined;
-    finish_reason:
-      | OpenAI.Completions.CompletionChoice["finish_reason"]
-      | OpenAI.ChatCompletion.Choice["finish_reason"]
-      | undefined
-      | null;
-    logprobs:
-      | OpenAI.Completions.CompletionChoice.Logprobs
-      | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
+    usage: Anthropic.Messages.Usage | undefined;
+    stop_reason:
+      | Anthropic.Messages.Message["stop_reason"]
+      | Anthropic.Completions.Completion["stop_reason"]
       | undefined
       | null;
   };

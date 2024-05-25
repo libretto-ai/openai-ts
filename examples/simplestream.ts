@@ -1,19 +1,37 @@
 import crypto from "crypto";
 import { f, objectTemplate } from "../src";
-import { OpenAI } from "../src/client";
+import { Anthropic } from "../src/client";
 
 async function main() {
-  const openai = new OpenAI({
+  const anthropic = new Anthropic({
     // apiKey: process.env.OPENAI_API_KEY
   });
 
   console.log("Testing Streaming Chat API...");
-  const completion = await openai.chat.completions.create({
+  const messages = await anthropic.messages.create({
     messages: objectTemplate([
       { role: "user", content: "Tell a 20 word story about {name}" },
     ]) as any,
-    model: "gpt-3.5-turbo",
+    model: "claude-3-haiku-20240307",
+    max_tokens: 1024,
     stream: true,
+    libretto: {
+      promptTemplateName: "ts-client-test-chat",
+      templateParams: { name: "John" },
+      feedbackKey: crypto.randomUUID(),
+    },
+  });
+  console.log("got completion: ", messages);
+  for await (const message of messages) {
+    console.log("Streamed Chat API replied with: ", message);
+  }
+  console.log("Testing Streaming Completion API...");
+  const completion = await anthropic.completions.create({
+    prompt:
+      f`\n\nHuman: Tell a 20 word story about {name}\n\n Assistant:` as unknown as string,
+    model: "claude-2.1",
+    stream: true,
+    max_tokens_to_sample: 1024,
     libretto: {
       promptTemplateName: "ts-client-test-chat",
       templateParams: { name: "John" },
@@ -21,20 +39,6 @@ async function main() {
     },
   });
   for await (const result of completion) {
-    console.log("Streamed Chat API replied with: ", result.choices);
-  }
-  console.log("Testing Streaming Completion API...");
-  const completion2 = await openai.completions.create({
-    prompt: f`Tell a 20 word story about {name}` as unknown as string,
-    model: "davinci",
-    stream: true,
-    libretto: {
-      promptTemplateName: "ts-client-test-chat",
-      templateParams: { name: "John" },
-      feedbackKey: crypto.randomUUID(),
-    },
-  });
-  for await (const result of completion2) {
     console.log("Streamed Completion API replied with: ", result);
   }
 }
