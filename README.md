@@ -1,11 +1,11 @@
-# @libretto/openai
+# @libretto/anthropic
 
-A drop-in replacement of the official `OpenAI` client for sending events to Libretto.
+A drop-in replacement of the official `Anthropic` client for sending events to Libretto.
 
 ## Installation
 
 ```bash
-npm install @libretto/openai
+npm install @libretto/anthropic
 ```
 
 ## Get Started
@@ -19,24 +19,24 @@ To send events to Libretto, you'll need to create a project. From the project yo
 
 ## Usage
 
-You can use the `OpenAI` client provided by `@libretto/openai` anywhere that you're currently using the official client.
+You can use the `Anthropic` client provided by `@libretto/anthropic` anywhere that you're currently using the official client.
 
-When instantiating the client, you can/should provide any of the standard `OpenAI` parameters in the constructor. Libretto-specific configuration can be provided via an additional `libretto` argument (see below).
+When instantiating the client, you can/should provide any of the standard `Anthropic` parameters in the constructor. Libretto-specific configuration can be provided via an additional `libretto` argument (see below).
 
 To allow our tools to separate the "prompt" from the "prompt parameters", use the included `objectTemplate` helper and pass the parameters separately as follows:
 
 ```typescript
-import { OpenAI, objectTemplate } from "@libretto/openai";
+import { Anthropic, objectTemplate } from "@libretto/anthropic";
 
 async function main() {
-  const openai = new OpenAI({
-    apiKey: "<OpenAI API Key>", // defaults to process.env.OPENAI_API_KEY
+  const anthropic = new Anthropic({
+    apiKey: "<Anthropic API Key>", // defaults to process.env.ANTHROPIC_API_KEY
     libretto: {
       apiKey: "<Libretto API Key>", // defaults to process.env.LIBRETTO_API_KEY
     },
   });
 
-  const completion = await openai.chat.completions.create({
+  const completion = await anthropic.chat.completions.create({
     // Instead of a chat message array, you can pass objectTemplate instead.
     messages: objectTemplate([
       { role: "user", content: "Give a hearty welcome to our new user {name}" },
@@ -60,7 +60,7 @@ main();
 
 ### Configuration
 
-The following options may be set in the `libretto` object that has been added to the OpenAI client constructor:
+The following options may be set in the `libretto` object that has been added to the Anthropic client constructor:
 
 - `promptTemplateName`: A default name to associate with prompts. If provided,
   this is the name that will be associated with any `create` call that's made
@@ -77,7 +77,7 @@ The following options may be set in the `libretto` object that has been added to
 ### Additional Parameters
 
 The following parameters can be specified in the `libretto` object that has been
-added to the base OpenAI `create` call interface:
+added to the base Anthropic `create` call interface:
 
 - `templateParams`: The parameters to use for template strings. This is a
   dictionary of key-value pairs.
@@ -96,7 +96,7 @@ added to the base OpenAI `create` call interface:
   parent id are grouped as a "Run Group".
 - `feedbackKey`: The optional key used to send feedback on the prompt, for
   use with `sendFeedback()` later. This is normally auto-generated, and the
-  value is returned in the OpenAI response.
+  value is returned in the Anthropic response.
 - `context`: This optional key/value map lets you send additional information
   along with your request such as internal tracing IDs, user IDs etc.
 
@@ -116,7 +116,7 @@ following:
 ```
 
 Finally, you have control over what gets inserted there in your request sent
-to OpenAI. In your `templateParams` you provide the aforementioned messages:
+to Anthropic. In your `templateParams` you provide the aforementioned messages:
 
 ```typescript
   templateParams: {
@@ -150,13 +150,13 @@ tests and improve your prompts.
 
 ```typescript
 import crypto from "crypto";
-import { OpenAI, sendFeedback } from "@libretto/openai";
+import { Anthropic, sendFeedback } from "@libretto/anthropic";
 
 async function main() {
-  const openai = new OpenAI();
+  const anthropic = new Anthropic();
 
-  // Must be unique for each call to OpenAI
-  const completion = await openai.chat.completions.create({
+  // Must be unique for each call to Anthropic
+  const completion = await anthropic.chat.completions.create({
     // ...
   });
 
@@ -165,7 +165,7 @@ async function main() {
 
   // If the user provided a better answer, send feedback to Libretto
   if (betterAnswer !== completion.choices[0].text) {
-    // feedback key is automatically injected into OpenAI response object.
+    // feedback key is automatically injected into Anthropic response object.
     const feedbackKey = completion.libretto?.feedbackKey;
     await sendFeedback({
       apiKey: "<Libretto API Key>", // defaults to process.env.LIBRETTO_API_KEY

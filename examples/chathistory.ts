@@ -3,7 +3,7 @@ import { Anthropic } from "../src/client";
 
 async function main() {
   const anthropic = new Anthropic({
-    // apiKey: process.env.OPENAI_API_KEY
+    // apiKey: process.env.ANTHROPIC_API_KEY
   });
 
   console.log("Testing Chat API with chat history...");
