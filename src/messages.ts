@@ -1,22 +1,13 @@
 import _Anthropic from "@anthropic-ai/sdk";
 import Core, { APIPromise } from "@anthropic-ai/sdk/core";
-import API, {
-  MessageCreateParamsNonStreaming,
-  MessageCreateParamsStreaming,
-} from "@anthropic-ai/sdk/resources";
-import {
-  Message,
-  MessageCreateParams,
-  MessageCreateParamsBase,
-  MessageStreamEvent,
-} from "@anthropic-ai/sdk/resources/messages";
+import { MessageCreateParamsBase } from "@anthropic-ai/sdk/resources/messages";
 import { Stream } from "@anthropic-ai/sdk/streaming";
 import crypto from "crypto";
 import { LibrettoConfig, send_event } from ".";
 import { PiiRedactor } from "./pii";
 import { getResolvedMessages, getResolvedStream } from "./resolvers";
 
-export class LibrettoMessages extends API.Messages {
+export class LibrettoMessages extends _Anthropic.Messages {
   protected piiRedactor?: PiiRedactor;
 
   constructor(
@@ -31,30 +22,36 @@ export class LibrettoMessages extends API.Messages {
   }
 
   override create(
-    body: MessageCreateParamsNonStreaming,
+    body: _Anthropic.Messages.MessageCreateParamsNonStreaming,
     options?: Core.RequestOptions,
-  ): APIPromise<Message>;
+  ): APIPromise<_Anthropic.Messages.Message>;
   override create(
-    body: MessageCreateParamsStreaming,
+    body: _Anthropic.Messages.MessageCreateParamsStreaming,
     options?: Core.RequestOptions,
-  ): APIPromise<Stream<MessageStreamEvent>>;
+  ): APIPromise<Stream<_Anthropic.Messages.MessageStreamEvent>>;
   override create(
     body: MessageCreateParamsBase,
     options?: Core.RequestOptions,
-  ): APIPromise<Stream<MessageStreamEvent> | Message>;
+  ): APIPromise<
+    Stream<_Anthropic.Messages.MessageStreamEvent> | _Anthropic.Messages.Message
+  >;
   override create(
-    body: MessageCreateParams,
+    body: _Anthropic.Messages.MessageCreateParams,
     options?: Core.RequestOptions,
-  ): APIPromise<Message> | APIPromise<Stream<MessageStreamEvent>> {
+  ):
+    | APIPromise<_Anthropic.Messages.Message>
+    | APIPromise<Stream<_Anthropic.Messages.MessageStreamEvent>> {
     return this._create(body, options) as
-      | APIPromise<Stream<MessageStreamEvent>>
-      | APIPromise<Message>;
+      | APIPromise<Stream<_Anthropic.Messages.MessageStreamEvent>>
+      | APIPromise<_Anthropic.Messages.Message>;
   }
 
   private async _create(
-    body: MessageCreateParams,
+    body: _Anthropic.Messages.MessageCreateParams,
     options?: Core.RequestOptions,
-  ): Promise<Message | Stream<MessageStreamEvent>> {
+  ): Promise<
+    _Anthropic.Messages.Message | Stream<_Anthropic.Messages.MessageStreamEvent>
+  > {
     const now = Date.now();
     const { libretto, messages, stream, ...anthropicBody } = body;
 
