@@ -226,7 +226,7 @@ class WrappedStream<
     isChat: boolean | undefined,
     feedbacKey: string,
   ) {
-    super((innerStream as any).iterator, (innerStream as any).controller);
+    super((innerStream as any).iterator, innerStream.controller);
     this.isChat = !!isChat;
     this.finishPromise = new Promise((r) => (this.resolveIterator = r));
     this.feedbackKey = feedbacKey;
@@ -248,6 +248,10 @@ class WrappedStream<
           chatItem.libretto.feedbackKey = this.feedbackKey;
           if (chatItem.choices[0].delta.content) {
             this.accumulatedResult.push(chatItem.choices[0].delta.content);
+          } else if (chatItem.choices[0].delta.tool_calls) {
+            this.accumulatedResult.push(
+              chatItem.choices[0].delta.tool_calls[0].function?.arguments ?? "",
+            );
           } else if (chatItem.choices[0].delta.function_call) {
             this.accumulatedResult.push(
               JSON.stringify(chatItem.choices[0].delta.function_call),
