@@ -206,7 +206,6 @@ class WrappedStream<
 > extends Stream<T> {
   finishPromise: Promise<ResolvedAPIResult>;
   private resolveIterator!: (v: ResolvedAPIResult) => void;
-  private accumulatedResult: string[] = [];
   private responseUsage: OpenAI.Completions.CompletionUsage | undefined;
   private finishReason:
     | OpenAI.Completions.CompletionChoice["finish_reason"]
@@ -238,6 +237,7 @@ class WrappedStream<
     const iterable = {
       [Symbol.asyncIterator]: () => iter,
     };
+    const accumulatedResult: string[] = [];
     try {
       for await (const item of iterable) {
         if (this.isChat) {
@@ -247,13 +247,13 @@ class WrappedStream<
           }
           chatItem.libretto.feedbackKey = this.feedbackKey;
           if (chatItem.choices[0].delta.content) {
-            this.accumulatedResult.push(chatItem.choices[0].delta.content);
+            accumulatedResult.push(chatItem.choices[0].delta.content);
           } else if (chatItem.choices[0].delta.tool_calls) {
-            this.accumulatedResult.push(
+            accumulatedResult.push(
               chatItem.choices[0].delta.tool_calls[0].function?.arguments ?? "",
             );
           } else if (chatItem.choices[0].delta.function_call) {
-            this.accumulatedResult.push(
+            accumulatedResult.push(
               JSON.stringify(chatItem.choices[0].delta.function_call),
             );
           }
@@ -267,7 +267,7 @@ class WrappedStream<
             completionItem.libretto = {};
           }
           completionItem.libretto.feedbackKey = this.feedbackKey;
-          this.accumulatedResult.push(completionItem.choices[0].text);
+          accumulatedResult.push(completionItem.choices[0].text);
           this.responseUsage = completionItem.usage;
           this.finishReason = completionItem.choices[0].finish_reason;
           this.logProbs = completionItem.choices[0].logprobs;
@@ -276,7 +276,7 @@ class WrappedStream<
       }
     } finally {
       this.resolveIterator({
-        response: this.accumulatedResult.join(""),
+        response: accumulatedResult.join(""),
         usage: this.responseUsage,
         finish_reason: this.finishReason,
         logprobs: this.logProbs,
