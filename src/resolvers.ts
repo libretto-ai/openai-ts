@@ -125,6 +125,7 @@ function getStaticChatCompletion(
       response: JSON.stringify({
         tool_calls: result.choices[0].message.tool_calls,
       }),
+      // Note that we have already converted this fromJSON, so we do not want to put
       tool_calls: [],
       usage: result.usage,
       finish_reason: result.choices[0].finish_reason,
@@ -333,13 +334,13 @@ export function reJsonToolCalls(tool_calls: ToolCallAsJsonFragment[]) {
     .map(
       (tool_call) => `{
       ${tool_call.id ? `"id": "${tool_call.id}"` : ""},
+      "type": "function",
       "function": {
         "name": "${tool_call.name}",
         "arguments": ${tool_call.argsAsJson}
-      },
-      "type": "function"
+      }
     }`,
     )
     .join(",\n");
-  return `[${tool_call_list}]`;
+  return `{"tool_calls": [${tool_call_list}]}`;
 }
