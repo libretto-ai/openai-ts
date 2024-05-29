@@ -4,6 +4,7 @@
     "module": "CommonJS",
     "moduleResolution": "node",
     "target": "es2022",
+    "sourceMap": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
