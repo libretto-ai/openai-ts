@@ -122,11 +122,14 @@ function getStaticChatCompletion(
   }
   if (result.choices[0].message.tool_calls) {
     return {
-      response: JSON.stringify({
-        tool_calls: result.choices[0].message.tool_calls,
-      }),
-      // Note that we have already converted this fromJSON, so we do not want to put
-      tool_calls: [],
+      response: undefined,
+      tool_calls: result.choices[0].message.tool_calls.map(
+        (tool_call): ToolCallAsJsonFragment => ({
+          id: tool_call.id,
+          name: tool_call.function.name,
+          argsAsJson: tool_call.function.arguments,
+        }),
+      ),
       usage: result.usage,
       finish_reason: result.choices[0].finish_reason,
       logprobs: result.choices[0].logprobs,
