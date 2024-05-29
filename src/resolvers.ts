@@ -4,8 +4,17 @@ import { ChatCompletionMessageParam } from "openai/resources/chat";
 import { Stream } from "openai/streaming";
 import { ObjectTemplate } from "./template";
 
+export interface ToolCallAsJsonFragment {
+  id: string | undefined;
+  name: string;
+  /** A JSON representation of the arguments dictionary, e.g. `"{ \"arg1\": \"val1\" }"` */
+  argsAsJson: string;
+}
+
 interface ResolvedAPIResult {
   response: string | null | undefined;
+  /** Calls to any tools */
+  tool_calls: ToolCallAsJsonFragment[];
   usage: OpenAI.Completions.CompletionUsage | undefined;
   finish_reason:
     | OpenAI.Completions.CompletionChoice["finish_reason"]
@@ -94,6 +103,7 @@ function getStaticChatCompletion(
   if (result.choices[0].message.content) {
     return {
       response: result.choices[0].message.content,
+      tool_calls: [],
       usage: result.usage,
       finish_reason: result.choices[0].finish_reason,
       logprobs: result.choices[0].logprobs,
@@ -104,6 +114,7 @@ function getStaticChatCompletion(
       response: JSON.stringify({
         function_call: result.choices[0].message.function_call,
       }),
+      tool_calls: [],
       usage: result.usage,
       finish_reason: result.choices[0].finish_reason,
       logprobs: result.choices[0].logprobs,
@@ -114,6 +125,7 @@ function getStaticChatCompletion(
       response: JSON.stringify({
         tool_calls: result.choices[0].message.tool_calls,
       }),
+      tool_calls: [],
       usage: result.usage,
       finish_reason: result.choices[0].finish_reason,
       logprobs: result.choices[0].logprobs,
@@ -121,6 +133,7 @@ function getStaticChatCompletion(
   }
   return {
     response: undefined,
+    tool_calls: [],
     usage: result.usage,
     finish_reason: result.choices[0].finish_reason,
     logprobs: result.choices[0].logprobs,
@@ -133,6 +146,7 @@ function getStaticCompletion(
   if (!result) {
     return {
       response: null,
+      tool_calls: [],
       usage: undefined,
       finish_reason: undefined,
       logprobs: undefined,
@@ -141,6 +155,7 @@ function getStaticCompletion(
   if (result.choices[0].text) {
     return {
       response: result.choices[0].text,
+      tool_calls: [],
       usage: result.usage,
       finish_reason: result.choices[0].finish_reason,
       logprobs: result.choices[0].logprobs,
@@ -148,6 +163,7 @@ function getStaticCompletion(
   }
   return {
     response: undefined,
+    tool_calls: [],
     usage: result.usage,
     finish_reason: undefined,
     logprobs: result.choices[0].logprobs,
@@ -238,6 +254,11 @@ class WrappedStream<
       [Symbol.asyncIterator]: () => iter,
     };
     const accumulatedResult: string[] = [];
+    const accumulatedTools: {
+      id: string | undefined;
+      name: string;
+      args: string[];
+    }[] = [];
     try {
       for await (const item of iterable) {
         if (this.isChat) {
@@ -249,8 +270,23 @@ class WrappedStream<
           if (chatItem.choices[0].delta.content) {
             accumulatedResult.push(chatItem.choices[0].delta.content);
           } else if (chatItem.choices[0].delta.tool_calls) {
-            accumulatedResult.push(
-              chatItem.choices[0].delta.tool_calls[0].function?.arguments ?? "",
+            // Not sure what happens if tool_calls has > 1 item in a streaming context?
+            const firstToolCall = chatItem.choices[0].delta.tool_calls[0];
+            // We are assuming if there is more than one, then the index will
+            // match up, i.e. the 2nd tool call in this response will have
+            // index == 1
+            if (
+              firstToolCall.index >= accumulatedTools.length &&
+              firstToolCall.function?.name
+            ) {
+              accumulatedTools.push({
+                id: firstToolCall.id,
+                name: firstToolCall.function.name,
+                args: [firstToolCall.function.arguments ?? ""],
+              });
+            }
+            accumulatedTools[firstToolCall.index].args.push(
+              firstToolCall.function?.arguments ?? "",
             );
           } else if (chatItem.choices[0].delta.function_call) {
             accumulatedResult.push(
@@ -276,6 +312,13 @@ class WrappedStream<
       }
     } finally {
       this.resolveIterator({
+        tool_calls: accumulatedTools.map(
+          ({ id, name, args }): ToolCallAsJsonFragment => ({
+            id,
+            name,
+            argsAsJson: args.join(""),
+          }),
+        ),
         response: accumulatedResult.join(""),
         usage: this.responseUsage,
         finish_reason: this.finishReason,
@@ -283,4 +326,20 @@ class WrappedStream<
       });
     }
   }
+}
+/** Reformat json fragments into a JSON string representing `ChatCompletionMessageToolCall[]` */
+export function reJsonToolCalls(tool_calls: ToolCallAsJsonFragment[]) {
+  const tool_call_list = tool_calls
+    .map(
+      (tool_call) => `{
+      ${tool_call.id ? `"id": "${tool_call.id}"` : ""},
+      "function": {
+        "name": "${tool_call.name}",
+        "arguments": ${tool_call.argsAsJson}
+      },
+      "type": "function"
+    }`,
+    )
+    .join(",\n");
+  return `[${tool_call_list}]`;
 }

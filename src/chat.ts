@@ -14,7 +14,11 @@ import {
 import { Stream } from "openai/streaming";
 import { LibrettoConfig, send_event } from ".";
 import { PiiRedactor } from "./pii";
-import { getResolvedMessages, getResolvedStream } from "./resolvers";
+import {
+  getResolvedMessages,
+  getResolvedStream,
+  reJsonToolCalls,
+} from "./resolvers";
 
 export class LibrettoChat extends Chat {
   constructor(
@@ -95,23 +99,32 @@ class LibrettoChatCompletions extends Completions {
 
     // note: not awaiting the result of this
     finalResultPromise.then(
-      async ({ response, finish_reason, logprobs, usage }) => {
+      async ({ response, tool_calls, finish_reason, logprobs, usage }) => {
         const responseTime = Date.now() - now;
         let params = libretto?.templateParams ?? {};
 
         // Redact PII before recording the event
         if (this.piiRedactor) {
+          const redactor = this.piiRedactor;
           try {
-            response = this.piiRedactor.redact(response);
-            params = this.piiRedactor.redact(params);
+            response = redactor.redact(response);
+            params = redactor.redact(params);
+            tool_calls = tool_calls.map((tool_call) => ({
+              id: tool_call.id,
+              name: tool_call.name,
+              argsAsJson: redactor.redact(tool_call.argsAsJson),
+            }));
           } catch (err) {
             console.log("Failed to redact PII", err);
           }
         }
+        const eventResponse = tool_calls.length
+          ? reJsonToolCalls(tool_calls)
+          : response;
 
         await send_event({
           responseTime,
-          response,
+          response: eventResponse,
           responseMetrics: { usage, finish_reason, logprobs },
           params: params,
           apiKey:
