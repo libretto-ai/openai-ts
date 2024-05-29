@@ -1,9 +1,6 @@
 {
   "compilerOptions": {
-    "lib": [
-      "es2022",
-      "DOM"
-    ],
+    "lib": ["es2022", "DOM"],
     "module": "CommonJS",
     "moduleResolution": "node",
     "target": "es2022",
@@ -15,8 +12,5 @@
     "outDir": "lib",
     "declaration": true
   },
-  "include": [
-    "src/**/*",
-    "examples/**/*"
-  ]
+  "include": ["src/**/*", "examples/**/*"]
 }
