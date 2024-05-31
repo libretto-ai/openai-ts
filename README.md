@@ -41,7 +41,7 @@ async function main() {
     messages: objectTemplate([
       { role: "user", content: "Give a hearty welcome to our new user {name}" },
     ]) as any,
-    model: "gpt-3.5-turbo",
+    model: "claude-3-haiku-20240307",
     libretto: {
       // Uniquely identifies this prompt within your project.
       promptTemplateName: "ts-client-test-chat",
