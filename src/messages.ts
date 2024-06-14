@@ -51,6 +51,7 @@ export class LibrettoMessages extends Messages {
     await sendFeedback({
       feedbackKey: messageId,
       isDeleted: true,
+      apiKey: this.config.apiKey,
     });
 
     return super.del(threadId, messageId, options);
