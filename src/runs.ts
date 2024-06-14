@@ -6,6 +6,7 @@ import {
   Runs,
 } from "openai/resources/beta/threads/runs/runs";
 import { LibrettoConfig, LibrettoRunCreateParams, send_event } from ".";
+import { LibrettoThreads } from "./threads";
 
 type RunParams = {
   runId: string;
@@ -71,9 +72,9 @@ class RunObserver {
       run.assistant_id,
     );
 
-    const thread = await this.client.beta.threads.retrieve(threadId);
-    const threadMetadata = (thread.metadata as Record<string, any>) ?? {};
-    const cursor = threadMetadata["libretto.cursor"] ?? "";
+    const cursor = await (
+      this.client.beta.threads as LibrettoThreads
+    ).getCursor(threadId);
 
     const messagePage = await this.client.beta.threads.messages.list(threadId, {
       after: cursor,
@@ -127,11 +128,10 @@ class RunObserver {
         feedbackKey: msg.id,
       });
 
-      await this.client.beta.threads.update(threadId, {
-        metadata: {
-          "libretto.cursor": msg.id,
-        },
-      });
+      await (this.client.beta.threads as LibrettoThreads).setCursor(
+        threadId,
+        msg.id,
+      );
     }
   }
 }

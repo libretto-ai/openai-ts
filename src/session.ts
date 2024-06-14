@@ -114,6 +114,13 @@ export interface Feedback {
    */
   betterResponse?: string;
 
+  /**
+   * Indicates that an event is "deleted." Used when assistant thread messages
+   * were deleted in OpenAI -- we keep the original message event but mark it
+   * as deleted via feedback.
+   */
+  isDeleted?: boolean;
+
   apiKey?: string;
 }
 
@@ -135,6 +142,7 @@ export async function sendFeedback(body: Feedback) {
     Object.entries(body).map(([k, v]) => {
       if (k === "feedbackKey") return ["feedback_key", v];
       if (k === "betterResponse") return ["better_response", v];
+      if (k === "isDeleted") return ["is_deleted", v];
       return [k, v];
     }),
   );
