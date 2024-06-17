@@ -6,54 +6,57 @@ import {
   Runs,
 } from "openai/resources/beta/threads/runs/runs";
 import { LibrettoConfig, LibrettoRunCreateParams, send_event } from ".";
-import { LibrettoThreads } from "./threads";
+import { ThreadManager } from "./assistants";
 
 type RunParams = {
   runId: string;
   opts?: LibrettoRunCreateParams;
 };
 
-class RunObserver {
-  protected threadQueues: Record<string, RunParams[]> = {};
-
+export class LibrettoRuns extends Runs {
   constructor(
     protected client: OpenAI,
     protected config: LibrettoConfig,
-  ) {}
-
-  addRun(threadId: string, params: RunParams) {
-    const queue = this.threadQueues[threadId];
-
-    // If another run is already being processed for this thread, just enqueue this new run.
-    // The handleThread invocation that's processing the existing run(s) will eventually pick
-    // up this one too.
-    if (queue && queue.length > 0) {
-      queue.push(params);
-      return;
-    }
-
-    // No work is currently being done on this thread, so invoke an asynchronous handler to
-    // start processing the run.
-    this.threadQueues[threadId] = [params];
-    this.handleThread(threadId);
+    protected threadManager: ThreadManager,
+  ) {
+    super(client);
   }
 
-  protected async handleThread(threadId: string) {
-    for (;;) {
-      const runParams = this.threadQueues[threadId].shift();
-      if (!runParams) {
-        delete this.threadQueues[threadId];
-        break;
-      }
+  override createAndPoll(
+    threadId: string,
+    body: RunCreateParamsNonStreaming,
+    options?:
+      | (RequestOptions & {
+          pollIntervalMs?: number | undefined;
+        })
+      | undefined,
+  ): Promise<Run> {
+    return this._createAndPoll(threadId, body, options);
+  }
 
-      try {
-        await this.handleRun(threadId, runParams);
-      } catch (err) {
-        console.error(
-          `[Libretto] Failed to handle Assistant thread run: ${err}`,
-        );
-      }
+  private async _createAndPoll(
+    threadId: string,
+    body: RunCreateParamsNonStreaming,
+    options?:
+      | (RequestOptions & {
+          pollIntervalMs?: number | undefined;
+        })
+      | undefined,
+  ) {
+    const { libretto, ...rest } = body;
+    const resp = await super.createAndPoll(threadId, rest, options);
+    if (libretto && libretto.promptTemplateName) {
+      this.threadManager.enqueue(threadId, () => {
+        return this.handleRun(threadId, {
+          runId: resp.id,
+          opts: {
+            apiKey: libretto.apiKey,
+            promptTemplateName: libretto.promptTemplateName,
+          },
+        });
+      });
     }
+    return resp;
   }
 
   protected async handleRun(threadId: string, params: RunParams) {
@@ -72,9 +75,7 @@ class RunObserver {
       run.assistant_id,
     );
 
-    const cursor = await (
-      this.client.beta.threads as LibrettoThreads
-    ).getCursor(threadId);
+    const cursor = await this.threadManager.getCursor(threadId);
 
     const messagePage = await this.client.beta.threads.messages.list(threadId, {
       after: cursor,
@@ -128,57 +129,7 @@ class RunObserver {
         feedbackKey: msg.id,
       });
 
-      await (this.client.beta.threads as LibrettoThreads).setCursor(
-        threadId,
-        msg.id,
-      );
+      await this.threadManager.setCursor(threadId, msg.id);
     }
-  }
-}
-
-export class LibrettoRuns extends Runs {
-  protected runObserver: RunObserver;
-
-  constructor(
-    client: OpenAI,
-    protected config: LibrettoConfig,
-  ) {
-    super(client);
-    this.runObserver = new RunObserver(client, config);
-  }
-
-  override createAndPoll(
-    threadId: string,
-    body: RunCreateParamsNonStreaming,
-    options?:
-      | (RequestOptions & {
-          pollIntervalMs?: number | undefined;
-        })
-      | undefined,
-  ): Promise<Run> {
-    return this._createAndPoll(threadId, body, options);
-  }
-
-  private async _createAndPoll(
-    threadId: string,
-    body: RunCreateParamsNonStreaming,
-    options?:
-      | (RequestOptions & {
-          pollIntervalMs?: number | undefined;
-        })
-      | undefined,
-  ) {
-    const { libretto, ...rest } = body;
-    const resp = await super.createAndPoll(threadId, rest, options);
-    if (libretto && libretto.promptTemplateName) {
-      this.runObserver.addRun(threadId, {
-        runId: resp.id,
-        opts: {
-          apiKey: libretto.apiKey,
-          promptTemplateName: libretto.promptTemplateName,
-        },
-      });
-    }
-    return resp;
   }
 }
