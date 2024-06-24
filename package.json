@@ -36,7 +36,7 @@
     "openai": "^4.40.1"
   },
   "dependencies": {
-    "p-queue": "^6.0.0",
+    "p-queue": "^8.0.1",
     "redact-pii-light": "^1.0.0"
   }
 }
