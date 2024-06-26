@@ -78,19 +78,23 @@ export async function send_event(event: Event) {
 
   const url = getUrl("event", "LIBRETTO_REPORTING_URL");
   const body = JSON.stringify(event);
-  const response = await fetch(url, {
-    method: "POST",
-    body,
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-  const responseJson = await extractJsonBody(response);
-  if (!response.ok) {
-    throw new Error(`Failed to send event: ${JSON.stringify(responseJson)}`);
-  }
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      body,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const responseJson = await extractJsonBody(response);
+    if (!response.ok) {
+      throw new Error(`Failed to send event: ${JSON.stringify(responseJson)}`);
+    }
 
-  return responseJson;
+    return responseJson;
+  } catch (e) {
+    console.error("Failed to send event to libretto:", e);
+  }
 }
 async function extractJsonBody(response: Response) {
   try {
