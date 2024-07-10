@@ -1,7 +1,7 @@
 {
   "name": "@libretto/anthropic",
   "main": "lib/src/index.js",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "types": "lib/src/index.d.ts",
   "repository": {
     "type": "git",
