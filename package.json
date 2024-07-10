@@ -33,7 +33,7 @@
     "typescript": "^5.5.3"
   },
   "peerDependencies": {
-    "@anthropic-ai/sdk": "^0.21.1"
+    "@anthropic-ai/sdk": "^0.24.3"
   },
   "dependencies": {
     "redact-pii-light": "^1.0.0"

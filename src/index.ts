@@ -49,23 +49,23 @@ declare module "@anthropic-ai/sdk/resources/messages" {
     libretto?: LibrettoCompletion;
   }
 
-  interface MessageStartEvent {
+  interface RawMessageStartEvent {
     libretto?: LibrettoCompletion;
   }
-  interface MessageDeltaEvent {
+  interface RawMessageDeltaEvent {
     libretto?: LibrettoCompletion;
   }
-  interface MessageStopEvent {
+  interface RawMessageStopEvent {
     libretto?: LibrettoCompletion;
   }
-  interface ContentBlockStartEvent {
+  interface RawContentBlockStartEvent {
     libretto?: LibrettoCompletion;
   }
 
-  interface ContentBlockDeltaEvent {
+  interface RawContentBlockDeltaEvent {
     libretto?: LibrettoCompletion;
   }
-  interface ContentBlockStopEvent {
+  interface RawContentBlockStopEvent {
     libretto?: LibrettoCompletion;
   }
 }

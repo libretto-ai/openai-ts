@@ -201,7 +201,7 @@ class WrappedStream<
   private responseUsage: Anthropic.Messages.Usage | undefined;
   private finishReason:
     | Anthropic.Messages.Message["stop_reason"]
-    | Anthropic.Messages.MessageDeltaEvent.Delta["stop_reason"]
+    | Anthropic.Messages.RawMessageDeltaEvent.Delta["stop_reason"]
     | Anthropic.Completions.Completion["stop_reason"]
     | undefined
     | null;
@@ -234,7 +234,11 @@ class WrappedStream<
           }
           chatItem.libretto.feedbackKey = this.feedbackKey;
           if (chatItem.type === "content_block_delta") {
-            this.accumulatedResult.push(chatItem.delta.text);
+            this.accumulatedResult.push(
+              chatItem.delta.type === "text_delta"
+                ? chatItem.delta.text
+                : chatItem.delta.partial_json,
+            );
             // } else if (chatItem.choices[0].delta.function_call) {
             //   this.accumulatedResult.push(
             //     JSON.stringify(chatItem.choices[0].delta.function_call),
