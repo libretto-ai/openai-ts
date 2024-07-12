@@ -1,3 +1,4 @@
+import { ChatCompletionMessageParam } from "openai/resources";
 import { objectTemplate } from "../src";
 import { OpenAI } from "../src/client";
 
@@ -21,7 +22,7 @@ async function main() {
         role: "user",
         content: "{coach_question}",
       },
-    ]) as any,
+    ]) as ChatCompletionMessageParam[],
     model: "gpt-3.5-turbo",
     temperature: 1,
     libretto: {

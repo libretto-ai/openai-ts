@@ -1,26 +1,28 @@
-import { f, objectTemplate } from "./template";
+import { f, formatProp, objectTemplate, variablesProp } from "./template";
 
 describe("templating", () => {
   describe("f", () => {
     it("should extract variables", () => {
-      expect(f`{a} {b} {c}`.variables).toEqual(["a", "b", "c"]);
+      expect(f`{a} {b} {c}`[variablesProp]).toEqual(["a", "b", "c"]);
     });
 
     it("Should throw an error when using variables in a template string", () => {
       const a = "a";
       const b = "b";
       const c = "c";
-      expect(() => f`${a} ${b} ${c}`.variables).toThrow("No inline variables");
+      expect(() => f`${a} ${b} ${c}`[variablesProp]).toThrow(
+        "No inline variables",
+      );
     });
 
     it("Should format to a string", () => {
-      expect(f`{a} {b} {c}`.format({ a: "A", b: "B", c: "C" })).toEqual(
+      expect(f`{a} {b} {c}`[formatProp]({ a: "A", b: "B", c: "C" })).toEqual(
         "A B C",
       );
     });
 
     it("Should throw an error if any variable is missing during formatting", () => {
-      expect(() => f`{a} {b} {c}`.format({ a: "A", c: "C" })).toThrow(
+      expect(() => f`{a} {b} {c}`[formatProp]({ a: "A", c: "C" })).toThrow(
         "missing variable",
       );
     });
@@ -29,7 +31,7 @@ describe("templating", () => {
   describe("objTemplate", () => {
     it("should extract variables from objects", () => {
       expect(
-        objectTemplate({ a: "A here: {a}", b: "B here: {b}" }).variables,
+        objectTemplate({ a: "A here: {a}", b: "B here: {b}" })[variablesProp],
       ).toEqual(["a", "b"]);
     });
 
@@ -39,15 +41,14 @@ describe("templating", () => {
           a: "A here: {a}",
           b: "B here: {b}",
           c: { d: "D here: {d}", e: "E here: {e}" },
-        }).variables,
+        })[variablesProp],
       ).toEqual(["a", "b", "d", "e"]);
     });
 
     it("should extract variables from arrays", () => {
-      expect(objectTemplate(["A here: {a}", "B here: {b}"]).variables).toEqual([
-        "a",
-        "b",
-      ]);
+      expect(
+        objectTemplate(["A here: {a}", "B here: {b}"])[variablesProp],
+      ).toEqual(["a", "b"]);
     });
 
     it("Should handle nulls, undefined, and numbers in variable extraction", () => {
@@ -59,7 +60,7 @@ describe("templating", () => {
           f: null,
           g: undefined,
           h: 1,
-        }).variables,
+        })[variablesProp],
       ).toEqual(["a", "b", "d", "e"]);
     });
 
@@ -75,7 +76,7 @@ describe("templating", () => {
             role: "user",
             content: "Where can I eat {food} in {city}?",
           },
-        ]).format({
+        ])[formatProp]({
           role: "tourist",
           quantity: 3,
           food: "pizza",
@@ -110,7 +111,7 @@ describe("templating", () => {
             role: "user",
             content: "{question}",
           },
-        ]).format({
+        ])[formatProp]({
           prev_messages: [
             {
               role: "user",
@@ -168,7 +169,7 @@ describe("templating", () => {
           a: "A here: \\{a\\}",
           b: "B here: \\{b\\}",
           c: { d: "D here: \\{d\\}", e: "E here: \\{e\\}" },
-        }).format({}),
+        })[formatProp]({}),
       ).toEqual({
         a: "A here: {a}",
         b: "B here: {b}",
@@ -181,7 +182,7 @@ describe("templating", () => {
           a: "A here: \\{a\\} but this is the value of a: {a}",
           b: "B here: \\{b\\}",
           c: { d: "D here: \\{d\\}", e: "E here: \\{e\\}" },
-        }).format({ a: "Heya" }),
+        })[formatProp]({ a: "Heya" }),
       ).toEqual({
         a: "A here: {a} but this is the value of a: Heya",
         b: "B here: {b}",

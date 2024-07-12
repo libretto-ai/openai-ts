@@ -2,7 +2,12 @@ import OpenAI from "openai";
 import { APIPromise } from "openai/core";
 import { ChatCompletionMessageParam } from "openai/resources/chat";
 import { Stream } from "openai/streaming";
-import { ObjectTemplate } from "./template";
+import {
+  formatProp,
+  isObjectTemplate,
+  ObjectTemplate,
+  templateProp,
+} from "./template";
 
 export interface ToolCallAsJsonFragment {
   id: string | undefined;
@@ -179,12 +184,12 @@ export function getResolvedMessages(
     | ObjectTemplate<ChatCompletionMessageParam[]>,
   params?: Record<string, any>,
 ) {
-  if ("template" in messages && "format" in messages) {
+  if (isObjectTemplate(messages)) {
     if (!params) {
       throw new Error(`Template requires params, but none were provided`);
     }
-    const resolvedMessages = messages.format(params);
-    return { messages: resolvedMessages, template: messages.template };
+    const resolvedMessages = messages[formatProp](params);
+    return { messages: resolvedMessages, template: messages[templateProp] };
   }
   return { messages, template: null };
 }
@@ -209,12 +214,12 @@ export function getResolvedPrompt(
   if (!s) {
     return { prompt: s, template: null };
   }
-  if ("template" in s && "format" in s) {
+  if (isObjectTemplate(s)) {
     if (!params) {
       throw new Error(`Template requires params, but none were provided`);
     }
-    const resolvedPrompt = s.format(params);
-    return { prompt: resolvedPrompt, template: s.template };
+    const resolvedPrompt = s[formatProp](params);
+    return { prompt: resolvedPrompt, template: s[templateProp] };
   }
   return { prompt: s, template: null };
 }
