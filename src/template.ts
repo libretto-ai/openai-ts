@@ -258,7 +258,7 @@ function handleChatHistory(item: any, params: any): any[] {
     );
   }
 
-  const allHistory = varsInChatHistory.map((varName) => {
+  const allHistory = varsInChatHistory.flatMap((varName) => {
     const value = params[varName];
     if (!value) {
       throw new Error(
