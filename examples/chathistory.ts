@@ -22,7 +22,7 @@ async function main() {
         role: "user",
         content: "{coach_question}",
       },
-    ]) as ChatCompletionMessageParam[],
+    ]) as ChatCompletionMessageParam[], // need to cast because of chat_history
     model: "gpt-3.5-turbo",
     temperature: 1,
     libretto: {
