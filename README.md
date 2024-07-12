@@ -40,7 +40,7 @@ async function main() {
     // Instead of a chat message array, you can pass objectTemplate instead.
     messages: objectTemplate([
       { role: "user", content: "Give a hearty welcome to our new user {name}" },
-    ]) as any,
+    ]),
     model: "gpt-3.5-turbo",
     libretto: {
       // Uniquely identifies this prompt within your project.
