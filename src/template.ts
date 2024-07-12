@@ -79,10 +79,30 @@ export function f(
   };
 }
 
-export const formatProp = Symbol("format");
-export const templateProp = Symbol("template");
+const formatProp = Symbol("format");
 
-export const variablesProp = Symbol("variables");
+const templateProp = Symbol("template");
+
+const variablesProp = Symbol("variables");
+
+export function formatTemplate<T>(
+  o: ObjectTemplate<T>,
+  parameters: Record<string, any>,
+): T {
+  const format = o[formatProp];
+  return format(parameters);
+}
+
+export function getTemplate<T>(o: ObjectTemplate<T>): T {
+  return o[templateProp];
+}
+
+export function getTemplateVariables<T>(
+  o: ObjectTemplate<T>,
+): readonly string[] {
+  return o[variablesProp];
+}
+
 /**
  * A template for nested objects, most useful when constructing chat prompts.
  */

@@ -3,10 +3,10 @@ import { APIPromise } from "openai/core";
 import { ChatCompletionMessageParam } from "openai/resources/chat";
 import { Stream } from "openai/streaming";
 import {
-  formatProp,
+  formatTemplate,
+  getTemplate,
   isObjectTemplate,
   ObjectTemplate,
-  templateProp,
 } from "./template";
 
 export interface ToolCallAsJsonFragment {
@@ -188,8 +188,8 @@ export function getResolvedMessages(
     if (!params) {
       throw new Error(`Template requires params, but none were provided`);
     }
-    const resolvedMessages = messages[formatProp](params);
-    return { messages: resolvedMessages, template: messages[templateProp] };
+    const resolvedMessages = formatTemplate(messages, params);
+    return { messages: resolvedMessages, template: getTemplate(messages) };
   }
   return { messages, template: null };
 }
@@ -218,8 +218,8 @@ export function getResolvedPrompt(
     if (!params) {
       throw new Error(`Template requires params, but none were provided`);
     }
-    const resolvedPrompt = s[formatProp](params);
-    return { prompt: resolvedPrompt, template: s[templateProp] };
+    const resolvedPrompt = formatTemplate(s, params);
+    return { prompt: resolvedPrompt, template: getTemplate(s) };
   }
   return { prompt: s, template: null };
 }
