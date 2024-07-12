@@ -258,16 +258,15 @@ function handleChatHistory(item: any, params: any): any[] {
     );
   }
 
-  const allHistory = varsInChatHistory.reduce((acc, varName) => {
+  const allHistory = varsInChatHistory.map((varName) => {
     const value = params[varName];
     if (!value) {
       throw new Error(
         `No value was found in 'templateParams' for the variable '${varName}'. Ensure you have a corresponding entry in 'templateParams'.`,
       );
     }
-    acc.push(...value);
-    return acc;
-  }, [] as any[]);
+    return value;
+  });
 
-  return [...allHistory];
+  return allHistory;
 }
