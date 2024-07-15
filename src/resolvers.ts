@@ -1,7 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { APIPromise } from "@anthropic-ai/sdk/core";
 import { Stream } from "@anthropic-ai/sdk/streaming";
-import { ObjectTemplate } from "./template";
+import {
+  formatTemplate,
+  getTemplate,
+  isObjectTemplate,
+  ObjectTemplate,
+} from "./template";
 
 interface ResolvedAPIResult {
   response: string | null | undefined;
@@ -150,12 +155,12 @@ export function getResolvedMessages(
     | ObjectTemplate<Anthropic.Messages.MessageParam[]>,
   params?: Record<string, any>,
 ) {
-  if ("template" in messages && "format" in messages) {
+  if (isObjectTemplate(messages)) {
     if (!params) {
       throw new Error(`Template requires params, but none were provided`);
     }
-    const resolvedMessages = messages.format(params);
-    return { messages: resolvedMessages, template: messages.template };
+    const resolvedMessages = formatTemplate(messages, params);
+    return { messages: resolvedMessages, template: getTemplate(messages) };
   }
   return { messages, template: null };
 }
@@ -180,12 +185,12 @@ export function getResolvedPrompt(
   if (!s) {
     return { prompt: s, template: null };
   }
-  if ("template" in s && "format" in s) {
+  if (isObjectTemplate(s)) {
     if (!params) {
       throw new Error(`Template requires params, but none were provided`);
     }
-    const resolvedPrompt = s.format(params);
-    return { prompt: resolvedPrompt, template: s.template };
+    const resolvedPrompt = formatTemplate(s, params);
+    return { prompt: resolvedPrompt, template: getTemplate(s) };
   }
   return { prompt: s, template: null };
 }
