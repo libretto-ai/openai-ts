@@ -1,7 +1,7 @@
 {
   "name": "@libretto/openai",
   "main": "lib/src/index.js",
-  "version": "1.0.17",
+  "version": "1.1.0",
   "types": "lib/src/index.d.ts",
   "repository": {
     "type": "git",
