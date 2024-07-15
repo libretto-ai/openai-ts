@@ -10,7 +10,7 @@ async function main() {
   const completion = await openai.chat.completions.create({
     messages: objectTemplate([
       { role: "user", content: "Say this is a test to {name}" },
-    ]) as any,
+    ]),
     model: "gpt-3.5-turbo",
     libretto: {
       promptTemplateName: "ts-client-test-chat",

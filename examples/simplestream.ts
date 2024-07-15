@@ -11,7 +11,7 @@ async function main() {
   const completion = await openai.chat.completions.create({
     messages: objectTemplate([
       { role: "user", content: "Tell a 20 word story about {name}" },
-    ]) as any,
+    ]),
     model: "gpt-3.5-turbo",
     stream: true,
     libretto: {
@@ -26,7 +26,7 @@ async function main() {
   console.log("Testing Streaming Completion API...");
   const completion2 = await openai.completions.create({
     prompt: f`Tell a 20 word story about {name}` as unknown as string,
-    model: "davinci",
+    model: "gpt-3.5-turbo-instruct",
     stream: true,
     libretto: {
       promptTemplateName: "ts-client-test-chat",

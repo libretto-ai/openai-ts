@@ -1,5 +1,5 @@
-import { OpenAI } from "../src/client";
 import { objectTemplate } from "../src";
+import { OpenAI } from "../src/client";
 
 async function main() {
   const openai = new OpenAI({
@@ -13,7 +13,7 @@ async function main() {
         role: "user",
         content: "What's the weather like in {location}?",
       },
-    ]) as any,
+    ]),
     model: "gpt-3.5-turbo",
     tools: [
       {

@@ -24,8 +24,8 @@ const ROLE_KEY = "role";
  *
  * // exposes the following:
  * template.variables; // ["name"]
- * template.format({name: "World"}); // "Hello World!"
- * template.template; // "Hello {name}!"
+ * template[formatProp]({name: "World"}); // "Hello World!"
+ * template[templateProp]; // "Hello {name}!"
  * ```
  *
  *
@@ -59,7 +59,7 @@ export function f(
     ),
   );
   return {
-    format(parameters: Record<string, any>) {
+    [formatProp]: (parameters: Record<string, any>) => {
       return str
         .replace(templateExpressionVarName, (match, variableName) => {
           if (parameters[variableName] === undefined) {
@@ -74,29 +74,56 @@ export function f(
           (_match, variableName) => `{${variableName}}`,
         );
     },
-    variables: Object.freeze(variables),
-    template: str,
+    [variablesProp]: Object.freeze(variables),
+    [templateProp]: str,
   };
+}
+
+const formatProp = Symbol("format");
+
+const templateProp = Symbol("template");
+
+const variablesProp = Symbol("variables");
+
+export function formatTemplate<T>(
+  o: ObjectTemplate<T>,
+  parameters: Record<string, any>,
+): T {
+  const format = o[formatProp];
+  return format(parameters);
+}
+
+export function getTemplate<T>(o: ObjectTemplate<T>): T {
+  return o[templateProp];
+}
+
+export function getTemplateVariables<T>(
+  o: ObjectTemplate<T>,
+): readonly string[] {
+  return o[variablesProp];
 }
 
 /**
  * A template for nested objects, most useful when constructing chat prompts.
  */
-export interface ObjectTemplate<T> {
+export interface ObjectTemplate_<T> {
   /**
    * A function that takes a dictionary of variable names to values, and returns the formatted object
    */
-  format(parameters: Record<string, any>): T;
+  [formatProp]: (parameters: Record<string, any>) => T;
   /**
    * The names of the variables used in the template
    */
-  variables: readonly string[];
+  [variablesProp]: readonly string[];
   /**
    * The original template object
    */
-  template: T;
+  [templateProp]: T;
 }
 
+export type ObjectTemplate<T> = T extends string
+  ? ObjectTemplate_<T>
+  : ObjectTemplate_<T> & T;
 /**
  * A template for nested objects, most useful when constructing chat prompts.
  *
@@ -109,9 +136,9 @@ export interface ObjectTemplate<T> {
  * }]);
  *
  * // exposes the following:
- * template.variables; // ["name"]
- * template.format({name: "World"}); // [{role: "user", content: "Hello World!"}]
- * template.template; // [{role: "user", content: "Hello {name}!"}]
+ * template[variablesProp]; // ["name"]
+ * template[formatProp]({name: "World"}); // [{role: "user", content: "Hello World!"}]
+ * template[templateProp]; // [{role: "user", content: "Hello {name}!"}]
  * ```
  *
  * @param objs The object to template
@@ -129,7 +156,7 @@ export function objectTemplate<T>(objs: T): ObjectTemplate<T> {
       return objs;
     }
     if (typeof objs == "string") {
-      return f(objs).format(parameters) as T;
+      return f(objs)[formatProp](parameters) as T;
     }
     if (Array.isArray(objs)) {
       return objs.flatMap((item) => {
@@ -139,24 +166,41 @@ export function objectTemplate<T>(objs: T): ObjectTemplate<T> {
           return handleChatHistory(item, parameters);
         }
 
-        return objectTemplate(item).format(parameters);
+        return objectTemplate(item)[formatProp](parameters);
       }) as T;
     }
 
     return Object.fromEntries(
       Object.entries(objs).map(([key, value]) => {
         return [
-          f(key).format(parameters),
-          objectTemplate(value).format(parameters),
+          f(key)[formatProp](parameters),
+          objectTemplate(value)[formatProp](parameters),
         ];
       }),
     ) as T;
   }
-  return {
-    format,
-    variables: Object.freeze(variables),
-    template: objs,
-  };
+  if (typeof objs == "string") {
+    return {
+      [formatProp]: format,
+      [variablesProp]: variables,
+      [templateProp]: objs,
+      toString: () => objs,
+    } as ObjectTemplate<T>;
+  }
+  if (typeof objs !== "object") {
+    throw new Error(
+      "Can only generate object templates for objects or strings",
+    );
+  }
+  const result = structuredClone(objs) as ObjectTemplate<T>;
+  result[formatProp] = format;
+  result[variablesProp] = Object.freeze(variables);
+  result[templateProp] = objs;
+  return result;
+}
+
+export function isObjectTemplate<T>(obj: any): obj is ObjectTemplate<T> {
+  return formatProp in obj && variablesProp in obj && templateProp in obj;
 }
 
 function objTemplateVariables(objs: any): readonly string[] {
@@ -164,7 +208,7 @@ function objTemplateVariables(objs: any): readonly string[] {
     return [];
   }
   if (typeof objs == "string") {
-    return f(objs).variables;
+    return f(objs)[variablesProp];
   }
 
   if (Array.isArray(objs)) {
@@ -172,7 +216,7 @@ function objTemplateVariables(objs: any): readonly string[] {
   }
   return Object.entries(objs).flatMap(([, value]): readonly string[] => {
     if (typeof value == "string") {
-      return f(value).variables;
+      return f(value)[variablesProp];
     }
     return objTemplateVariables(value);
   });
@@ -214,16 +258,15 @@ function handleChatHistory(item: any, params: any): any[] {
     );
   }
 
-  const allHistory = varsInChatHistory.reduce((acc, varName) => {
+  const allHistory = varsInChatHistory.flatMap((varName) => {
     const value = params[varName];
     if (!value) {
       throw new Error(
         `No value was found in 'templateParams' for the variable '${varName}'. Ensure you have a corresponding entry in 'templateParams'.`,
       );
     }
-    acc.push(...value);
-    return acc;
-  }, [] as any[]);
+    return value;
+  });
 
-  return [...allHistory];
+  return allHistory;
 }
