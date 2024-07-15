@@ -10,7 +10,7 @@ async function main() {
   const messages = await anthropic.messages.create({
     messages: objectTemplate([
       { role: "user", content: "Say this is a test to {name}" },
-    ]) as any,
+    ]),
     max_tokens: 1024,
     model: "claude-3-haiku-20240307",
     libretto: {

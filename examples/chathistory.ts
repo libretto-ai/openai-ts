@@ -20,7 +20,7 @@ async function main() {
         role: "user",
         content: "{coach_question}",
       },
-    ]) as any,
+    ]) as any, // need to cast because of role: "chat_history"
     model: "claude-3-haiku-20240307",
     max_tokens: 1024,
     temperature: 1,
