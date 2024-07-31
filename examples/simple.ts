@@ -6,23 +6,23 @@ async function main() {
     // apiKey: process.env.OPENAI_API_KEY
   });
 
-  // console.log("Testing Chat API...");
-  // const completion = await openai.chat.completions.create({
-  //   messages: objectTemplate([
-  //     {
-  //       role: "system",
-  //       content:
-  //         "I am a super cheerful AI and I respond accordingly to someone's name.",
-  //     },
-  //     { role: "user", content: "This is my name: {name}" },
-  //   ]),
-  //   model: "gpt-4o-mini",
-  //   libretto: {
-  //     promptTemplateName: "ts-client-test-chat",
-  //     templateParams: { name: "John" },
-  //   },
-  // });
-  // console.log("Chat API replied with: ", completion.choices);
+  console.log("Testing Chat API...");
+  const completion = await openai.chat.completions.create({
+    messages: objectTemplate([
+      {
+        role: "system",
+        content:
+          "I am a super cheerful AI and I respond accordingly to someone's name.",
+      },
+      { role: "user", content: "This is my name: {name}" },
+    ]),
+    model: "gpt-4o-mini",
+    libretto: {
+      promptTemplateName: "ts-client-test-chat",
+      templateParams: { name: "John" },
+    },
+  });
+  console.log("Chat API replied with: ", completion.choices);
 
   console.log("Testing Chat API with array user...");
   const completion2 = await openai.chat.completions.create({
