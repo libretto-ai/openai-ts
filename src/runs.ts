@@ -47,7 +47,7 @@ export class LibrettoRuns extends Runs {
     const resp = await super.createAndPoll(threadId, rest, options);
     if (libretto && libretto.promptTemplateName) {
       this.threadManager.enqueue(threadId, () => {
-        return this.handleRun(threadId, {
+        return this.handleRun(threadId, rest, {
           runId: resp.id,
           opts: {
             apiKey: libretto.apiKey,
@@ -59,14 +59,18 @@ export class LibrettoRuns extends Runs {
     return resp;
   }
 
-  protected async handleRun(threadId: string, params: RunParams) {
+  protected async handleRun(
+    threadId: string,
+    runCreateParams: RunCreateParamsNonStreaming,
+    librettoParams: RunParams,
+  ) {
     const run = await this.client.beta.threads.runs.poll(
       threadId,
-      params.runId,
+      librettoParams.runId,
     );
     if (run.status !== "completed") {
       console.log(
-        `[Libretto] Assistant thread run did not complete, ignoring: threadId=${threadId} runId=${params.runId}`,
+        `[Libretto] Assistant thread run did not complete, ignoring: threadId=${threadId} runId=${librettoParams.runId}`,
       );
       return;
     }
@@ -107,8 +111,14 @@ export class LibrettoRuns extends Runs {
             },
           ],
         },
+        modelParameters: {
+          modelProvider: "openai",
+          modelType: "assistants",
+          model: runCreateParams.model ?? assistant.model,
+          ...runCreateParams,
+        },
         apiKey:
-          params.opts?.apiKey ??
+          librettoParams.opts?.apiKey ??
           this.config.apiKey ??
           process.env.LIBRETTO_API_KEY,
         promptTemplateChat: [
@@ -123,7 +133,9 @@ export class LibrettoRuns extends Runs {
         ],
         promptTemplateName: assistant.name ?? assistant.id,
         apiName:
-          params.opts?.promptTemplateName ?? assistant.name ?? assistant.id,
+          librettoParams.opts?.promptTemplateName ??
+          assistant.name ??
+          assistant.id,
         prompt: {},
         chatId: threadId,
         feedbackKey: msg.id,
