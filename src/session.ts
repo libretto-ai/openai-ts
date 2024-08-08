@@ -73,7 +73,7 @@ export interface PromptEvent {
       | undefined
       | null;
   };
-  // eslint-disable-next-line @typescript-eslint/ban-types
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   prompt: {}; //hack
 }
 
