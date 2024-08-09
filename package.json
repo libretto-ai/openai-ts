@@ -38,7 +38,7 @@
     "openai": "^4.52.0"
   },
   "dependencies": {
-    "@libretto/redact-pii-light": "^1.0.0",
+    "@libretto/redact-pii-light": "^1.0.1",
     "p-queue": "^6.0.0"
   }
 }
