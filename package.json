@@ -38,12 +38,7 @@
     "openai": "^4.52.0"
   },
   "dependencies": {
-    "p-queue": "^6.0.0",
-    "redact-pii-light": "^1.0.0"
-  },
-  "overrides": {
-    "redact-pii-light": {
-      "@google-cloud/dlp": "^5.8.0"
-    }
+    "@libretto/redact-pii-light": "^1.0.1",
+    "p-queue": "^6.0.0"
   }
 }
