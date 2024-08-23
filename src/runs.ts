@@ -82,7 +82,7 @@ export class LibrettoRuns extends Runs {
         responseErrors: [JSON.stringify(run.last_error)],
         params: {},
         apiKey:
-          params.opts?.apiKey ??
+          params?.opts?.apiKey ??
           this.config.apiKey ??
           process.env.LIBRETTO_API_KEY,
         promptTemplateChat: [
@@ -97,7 +97,7 @@ export class LibrettoRuns extends Runs {
         ],
         promptTemplateName: assistant.name ?? assistant.id,
         apiName:
-          params.opts?.promptTemplateName ?? assistant.name ?? assistant.id,
+          params?.opts?.promptTemplateName ?? assistant.name ?? assistant.id,
         prompt: {},
         chatId: threadId,
       });
