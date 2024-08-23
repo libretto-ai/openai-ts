@@ -98,45 +98,83 @@ class LibrettoChatCompletions extends Completions {
     );
 
     // note: not awaiting the result of this
-    finalResultPromise.then(
-      async ({ response, tool_calls, finish_reason, logprobs, usage }) => {
-        const responseTime = Date.now() - now;
+    finalResultPromise
+      .then(
+        async ({ response, tool_calls, finish_reason, logprobs, usage }) => {
+          const responseTime = Date.now() - now;
+          let params = libretto?.templateParams ?? {};
+
+          // Redact PII before recording the event
+          if (this.piiRedactor) {
+            const redactor = this.piiRedactor;
+            try {
+              response = redactor.redact(response);
+              params = redactor.redact(params);
+              tool_calls = tool_calls.map((tool_call) => ({
+                id: tool_call.id,
+                name: tool_call.name,
+                argsAsJson: redactor.redact(tool_call.argsAsJson),
+              }));
+            } catch (err) {
+              console.log("Failed to redact PII", err);
+            }
+          }
+          const eventResponse = tool_calls.length
+            ? reJsonToolCalls(tool_calls)
+            : response;
+
+          await send_event({
+            responseTime,
+            response: eventResponse,
+            responseMetrics: { usage, finish_reason, logprobs },
+            params: params,
+            apiKey:
+              libretto?.apiKey ??
+              this.config.apiKey ??
+              process.env.LIBRETTO_API_KEY,
+            promptTemplateChat:
+              libretto?.templateChat ?? template ?? resolvedMessages,
+            promptTemplateName: resolvedPromptTemplateName,
+            apiName:
+              libretto?.promptTemplateName ?? this.config.promptTemplateName,
+            prompt: {},
+            chatId: libretto?.chatId ?? this.config.chatId,
+            parentEventId: libretto?.parentEventId,
+            feedbackKey,
+            modelParameters: {
+              modelProvider: "openai",
+              modelType: "chat",
+              ...openaiBody,
+            },
+            tools: tools,
+          });
+        },
+      )
+      .catch(async (error) => {
+        // Capture OpenAI API errors here
         let params = libretto?.templateParams ?? {};
 
         // Redact PII before recording the event
         if (this.piiRedactor) {
           const redactor = this.piiRedactor;
           try {
-            response = redactor.redact(response);
             params = redactor.redact(params);
-            tool_calls = tool_calls.map((tool_call) => ({
-              id: tool_call.id,
-              name: tool_call.name,
-              argsAsJson: redactor.redact(tool_call.argsAsJson),
-            }));
           } catch (err) {
             console.log("Failed to redact PII", err);
           }
         }
-        const eventResponse = tool_calls.length
-          ? reJsonToolCalls(tool_calls)
-          : response;
 
         await send_event({
-          responseTime,
-          response: eventResponse,
-          responseMetrics: { usage, finish_reason, logprobs },
-          params: params,
+          responseErrors: [JSON.stringify(error.response)],
+          responseTime: Date.now() - now,
           apiKey:
             libretto?.apiKey ??
             this.config.apiKey ??
             process.env.LIBRETTO_API_KEY,
-          promptTemplateChat:
-            libretto?.templateChat ?? template ?? resolvedMessages,
           promptTemplateName: resolvedPromptTemplateName,
-          apiName:
-            libretto?.promptTemplateName ?? this.config.promptTemplateName,
+          promptTemplateChat: template ?? resolvedMessages,
           prompt: {},
+          params,
           chatId: libretto?.chatId ?? this.config.chatId,
           parentEventId: libretto?.parentEventId,
           feedbackKey,
@@ -145,10 +183,9 @@ class LibrettoChatCompletions extends Completions {
             modelType: "chat",
             ...openaiBody,
           },
-          tools: tools,
+          tools,
         });
-      },
-    );
+      });
     return returnValue as ChatCompletion | Stream<ChatCompletionChunk>;
   }
 }

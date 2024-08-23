@@ -86,8 +86,8 @@ export class LibrettoCompletions extends Completions {
     );
 
     // note: not awaiting the result of this
-    finalResultPromise.then(
-      async ({ response, finish_reason, logprobs, usage }) => {
+    finalResultPromise
+      .then(async ({ response, finish_reason, logprobs, usage }) => {
         const responseTime = Date.now() - now;
         let params = libretto?.templateParams ?? {};
 
@@ -130,8 +130,45 @@ export class LibrettoCompletions extends Completions {
             ...openaiBody,
           },
         });
-      },
-    );
+      })
+      .catch(async (error) => {
+        let params = libretto?.templateParams ?? {};
+
+        // Redact PII before recording the event
+        if (this.piiRedactor) {
+          const redactor = this.piiRedactor;
+          try {
+            params = redactor.redact(params);
+          } catch (err) {
+            console.log("Failed to redact PII", err);
+          }
+        }
+
+        await send_event({
+          responseErrors: [JSON.stringify(error.response)],
+          responseTime: Date.now() - now,
+          apiName:
+            libretto?.promptTemplateName ?? this.config.promptTemplateName,
+          apiKey:
+            libretto?.apiKey ??
+            this.config.apiKey ??
+            process.env.LIBRETTO_API_KEY,
+          promptTemplateText:
+            libretto?.templateText ?? template ?? resolvedPromptStr,
+          promptTemplateName: resolvedPromptTemplateName,
+          prompt: {},
+          params,
+          chatId: libretto?.chatId ?? this.config.chatId,
+          parentEventId: libretto?.parentEventId,
+          feedbackKey,
+          context: libretto?.context,
+          modelParameters: {
+            modelProvider: "openai",
+            modelType: "completion",
+            ...openaiBody,
+          },
+        });
+      });
 
     return returnValue as Completion | Stream<Completion>;
   }

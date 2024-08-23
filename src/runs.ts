@@ -44,7 +44,9 @@ export class LibrettoRuns extends Runs {
       | undefined,
   ) {
     const { libretto, ...rest } = body;
+
     const resp = await super.createAndPoll(threadId, rest, options);
+
     if (libretto && libretto.promptTemplateName) {
       this.threadManager.enqueue(threadId, () => {
         return this.handleRun(threadId, {
@@ -56,6 +58,7 @@ export class LibrettoRuns extends Runs {
         });
       });
     }
+
     return resp;
   }
 
@@ -64,16 +67,49 @@ export class LibrettoRuns extends Runs {
       threadId,
       params.runId,
     );
+
+    const assistant = await this.client.beta.assistants.retrieve(
+      run.assistant_id,
+    );
+
+    if (
+      run.status === "failed" ||
+      run.status === "cancelled" ||
+      run.status === "incomplete"
+    ) {
+      await send_event({
+        responseTime: 1,
+        responseErrors: [JSON.stringify(run.last_error)],
+        params: {},
+        apiKey:
+          params.opts?.apiKey ??
+          this.config.apiKey ??
+          process.env.LIBRETTO_API_KEY,
+        promptTemplateChat: [
+          {
+            role: "assistant",
+            content: assistant.instructions,
+          },
+          {
+            role: "chat_history",
+            content: "{chat_history}",
+          },
+        ],
+        promptTemplateName: assistant.name ?? assistant.id,
+        apiName:
+          params.opts?.promptTemplateName ?? assistant.name ?? assistant.id,
+        prompt: {},
+        chatId: threadId,
+      });
+      return;
+    }
+
     if (run.status !== "completed") {
       console.log(
         `[Libretto] Assistant thread run did not complete, ignoring: threadId=${threadId} runId=${params.runId}`,
       );
       return;
     }
-
-    const assistant = await this.client.beta.assistants.retrieve(
-      run.assistant_id,
-    );
 
     const cursor = await this.threadManager.getCursor(threadId);
 
