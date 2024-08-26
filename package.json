@@ -21,7 +21,7 @@
     "lib/src"
   ],
   "devDependencies": {
-    "@babel/traverse": "^7.25.3",
+    "@babel/traverse": "^7.25.4",
     "@jest/globals": "^29.7.0",
     "@types/jest": "^29.5.12",
     "@typescript-eslint/eslint-plugin": "^8.0.1",
