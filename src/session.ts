@@ -3,6 +3,7 @@ import {
   type CompletionCreateParamsNonStreaming,
   type CompletionUsage,
 } from "openai/resources";
+import { RunCreateParamsNonStreaming } from "openai/resources/beta/threads/runs/runs";
 import { type ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat";
 
 function getUrl(apiName: string, environmentName: string): string {
@@ -24,7 +25,14 @@ interface OpenAICompletionParameters
   modelProvider: "openai";
   modelType: "completion";
 }
-export type ModelParameters = OpenAIChatParameters | OpenAICompletionParameters;
+interface OpenAIThreadRunParameters extends RunCreateParamsNonStreaming {
+  modelProvider: "openai";
+  modelType: "assistants";
+}
+export type ModelParameters =
+  | OpenAIChatParameters
+  | OpenAICompletionParameters
+  | OpenAIThreadRunParameters;
 
 /**
  *
@@ -65,7 +73,7 @@ export interface PromptEvent {
       | undefined
       | null;
   };
-  // eslint-disable-next-line @typescript-eslint/ban-types
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   prompt: {}; //hack
 }
 

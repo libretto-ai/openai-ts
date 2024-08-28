@@ -1,4 +1,4 @@
-import { SyncRedactor } from "redact-pii-light";
+import { SyncRedactor } from "@libretto/redact-pii-light";
 
 export class PiiRedactor {
   protected redactor: SyncRedactor;
