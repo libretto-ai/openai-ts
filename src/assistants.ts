@@ -19,7 +19,9 @@ export class ThreadManager {
       try {
         await fn();
       } catch (err) {
-        console.error(`[Libretto] Error processing thread: ${err}`);
+        if (process.env.LIBRETTO_DEBUG === "true") {
+          console.error(`[Libretto] Error processing thread: ${err}`);
+        }
       }
     });
   }
