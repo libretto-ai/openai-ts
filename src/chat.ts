@@ -96,12 +96,13 @@ class LibrettoChatCompletions extends Completions {
       feedbackKey,
       true,
     );
-    let params = libretto?.templateParams ?? {};
+
     // note: not awaiting the result of this
     finalResultPromise
       .then(
         async ({ response, tool_calls, finish_reason, logprobs, usage }) => {
           const responseTime = Date.now() - now;
+          let params = libretto?.templateParams ?? {};
 
           // Redact PII before recording the event
           if (this.piiRedactor) {
