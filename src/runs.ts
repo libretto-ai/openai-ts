@@ -81,31 +81,13 @@ export class LibrettoRuns extends Runs {
       run.status === "cancelled" ||
       run.status === "incomplete"
     ) {
-      await send_event({
-        responseTime: 1,
+      await this.prepareAndSendEvent({
+        runCreateParams,
+        librettoParams,
         responseErrors: [JSON.stringify(run.last_error)],
-        params: {},
-        apiKey:
-          librettoParams?.opts?.apiKey ??
-          this.config.apiKey ??
-          process.env.LIBRETTO_API_KEY,
-        promptTemplateChat: [
-          {
-            role: "assistant",
-            content: assistant.instructions,
-          },
-          {
-            role: "chat_history",
-            content: "{chat_history}",
-          },
-        ],
-        promptTemplateName: assistant.name ?? assistant.id,
-        apiName:
-          librettoParams?.opts?.promptTemplateName ??
-          assistant.name ??
-          assistant.id,
-        prompt: {},
         chatId: threadId,
+        assistant,
+        params: {},
       });
       return;
     }
@@ -137,10 +119,12 @@ export class LibrettoRuns extends Runs {
         );
         continue;
       }
-
-      await send_event({
-        responseTime: 1,
+      await this.prepareAndSendEvent({
         response: msg.content[0].text.value,
+        runCreateParams,
+        librettoParams,
+        assistant,
+        chatId: msg.id,
         params: {
           chat_history: [
             {
@@ -149,37 +133,63 @@ export class LibrettoRuns extends Runs {
             },
           ],
         },
-        modelParameters: {
-          modelProvider: "openai",
-          modelType: "assistants",
-          model: runCreateParams.model ?? assistant.model,
-          ...runCreateParams,
-        },
-        apiKey:
-          librettoParams.opts?.apiKey ??
-          this.config.apiKey ??
-          process.env.LIBRETTO_API_KEY,
-        promptTemplateChat: [
-          {
-            role: "assistant",
-            content: assistant.instructions,
-          },
-          {
-            role: "chat_history",
-            content: "{chat_history}",
-          },
-        ],
-        promptTemplateName: assistant.name ?? assistant.id,
-        apiName:
-          librettoParams.opts?.promptTemplateName ??
-          assistant.name ??
-          assistant.id,
-        prompt: {},
-        chatId: threadId,
-        feedbackKey: msg.id,
       });
 
       await this.threadManager.setCursor(threadId, msg.id);
     }
+  }
+  protected async prepareAndSendEvent({
+    params,
+    librettoParams,
+    runCreateParams,
+    assistant,
+    chatId,
+    feedbackKey,
+    response,
+    responseErrors,
+  }: {
+    response?: string | null | undefined;
+    params: Record<string, any>;
+    librettoParams: RunParams;
+    runCreateParams: RunCreateParamsNonStreaming;
+    assistant: OpenAI.Beta.Assistants.Assistant;
+    chatId: string;
+    feedbackKey?: string;
+    responseErrors?: string[];
+  }) {
+    await send_event({
+      responseTime: 1,
+      response,
+      responseErrors,
+      params,
+      apiKey:
+        librettoParams?.opts?.apiKey ??
+        this.config.apiKey ??
+        process.env.LIBRETTO_API_KEY,
+      promptTemplateChat: [
+        {
+          role: "assistant",
+          content: assistant.instructions,
+        },
+        {
+          role: "chat_history",
+          content: "{chat_history}",
+        },
+      ],
+      modelParameters: {
+        modelProvider: "openai",
+        modelType: "assistants",
+        model: runCreateParams.model ?? assistant.model,
+        ...runCreateParams,
+      },
+      promptTemplateName: assistant.name ?? assistant.id,
+      apiName:
+        librettoParams?.opts?.promptTemplateName ??
+        assistant.name ??
+        assistant.id,
+      prompt: {},
+      chatId,
+      feedbackKey,
+    });
   }
 }
