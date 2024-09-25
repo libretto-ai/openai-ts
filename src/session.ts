@@ -101,7 +101,9 @@ export async function send_event(event: Event) {
 
     return responseJson;
   } catch (e) {
-    console.error("Failed to send event to libretto:", e);
+    if (process.env.LIBRETTO_DEBUG === "true") {
+      console.error("Failed to send event to libretto:", e);
+    }
   }
 }
 async function extractJsonBody(response: Response) {

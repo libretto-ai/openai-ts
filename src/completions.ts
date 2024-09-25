@@ -97,7 +97,7 @@ export class LibrettoCompletions extends Completions {
             response = this.piiRedactor.redact(response);
             params = this.piiRedactor.redact(params);
           } catch (err) {
-            console.log("Failed to redact PII", err);
+            console.warn("Failed to redact PII", err);
           }
         }
 

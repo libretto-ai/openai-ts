@@ -115,7 +115,7 @@ class LibrettoChatCompletions extends Completions {
               argsAsJson: redactor.redact(tool_call.argsAsJson),
             }));
           } catch (err) {
-            console.log("Failed to redact PII", err);
+            console.warn("Failed to redact PII", err);
           }
         }
         const eventResponse = tool_calls.length

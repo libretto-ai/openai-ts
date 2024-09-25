@@ -69,9 +69,11 @@ export class LibrettoRuns extends Runs {
       librettoParams.runId,
     );
     if (run.status !== "completed") {
-      console.log(
-        `[Libretto] Assistant thread run did not complete, ignoring: threadId=${threadId} runId=${librettoParams.runId}`,
-      );
+      if (process.env.LIBRETTO_DEBUG === "true") {
+        console.log(
+          `[Libretto] Assistant thread run did not complete, ignoring: threadId=${threadId} runId=${librettoParams.runId}`,
+        );
+      }
       return;
     }
 
