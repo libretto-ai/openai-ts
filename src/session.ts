@@ -86,6 +86,8 @@ export async function send_event(event: Event) {
 
   const url = getUrl("event", "LIBRETTO_REPORTING_URL");
   const body = JSON.stringify(event);
+  let status = 0;
+
   try {
     const response = await fetch(url, {
       method: "POST",
@@ -94,6 +96,7 @@ export async function send_event(event: Event) {
         "Content-Type": "application/json",
       },
     });
+    status = response.status;
     const responseJson = await extractJsonBody(response);
     if (!response.ok) {
       throw new Error(`Failed to send event: ${JSON.stringify(responseJson)}`);
@@ -101,7 +104,11 @@ export async function send_event(event: Event) {
 
     return responseJson;
   } catch (e) {
-    if (process.env.LIBRETTO_DEBUG === "true") {
+    // don't suppress errors if we're in debug mode OR if we get a 4xx response because we made the request wrong.
+    if (
+      process.env.LIBRETTO_DEBUG === "true" ||
+      (status < 500 && status >= 400)
+    ) {
       console.error("Failed to send event to libretto:", e);
     }
   }
