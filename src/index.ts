@@ -12,7 +12,7 @@ export type LibrettoConfig = {
   chatId?: string;
 };
 
-type LibrettoCreateParams = {
+export type LibrettoCreateParams = {
   apiKey?: string;
   promptTemplateName?: string;
   templateText?: string;

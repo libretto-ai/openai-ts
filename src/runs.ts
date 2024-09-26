@@ -44,7 +44,9 @@ export class LibrettoRuns extends Runs {
       | undefined,
   ) {
     const { libretto, ...rest } = body;
+
     const resp = await super.createAndPoll(threadId, rest, options);
+
     if (libretto && libretto.promptTemplateName) {
       this.threadManager.enqueue(threadId, () => {
         return this.handleRun(threadId, rest, {
@@ -56,6 +58,7 @@ export class LibrettoRuns extends Runs {
         });
       });
     }
+
     return resp;
   }
 
@@ -68,6 +71,27 @@ export class LibrettoRuns extends Runs {
       threadId,
       librettoParams.runId,
     );
+
+    const assistant = await this.client.beta.assistants.retrieve(
+      run.assistant_id,
+    );
+
+    if (
+      run.status === "failed" ||
+      run.status === "cancelled" ||
+      run.status === "incomplete"
+    ) {
+      await this.prepareAndSendEvent({
+        runCreateParams,
+        librettoParams,
+        responseErrors: [JSON.stringify(run.last_error)],
+        chatId: threadId,
+        assistant,
+        params: {},
+      });
+      return;
+    }
+
     if (run.status !== "completed") {
       if (process.env.LIBRETTO_DEBUG === "true") {
         console.log(
@@ -76,10 +100,6 @@ export class LibrettoRuns extends Runs {
       }
       return;
     }
-
-    const assistant = await this.client.beta.assistants.retrieve(
-      run.assistant_id,
-    );
 
     const cursor = await this.threadManager.getCursor(threadId);
 
@@ -101,10 +121,12 @@ export class LibrettoRuns extends Runs {
         );
         continue;
       }
-
-      await send_event({
-        responseTime: 1,
+      await this.prepareAndSendEvent({
         response: msg.content[0].text.value,
+        runCreateParams,
+        librettoParams,
+        assistant,
+        chatId: msg.id,
         params: {
           chat_history: [
             {
@@ -113,37 +135,63 @@ export class LibrettoRuns extends Runs {
             },
           ],
         },
-        modelParameters: {
-          modelProvider: "openai",
-          modelType: "assistants",
-          model: runCreateParams.model ?? assistant.model,
-          ...runCreateParams,
-        },
-        apiKey:
-          librettoParams.opts?.apiKey ??
-          this.config.apiKey ??
-          process.env.LIBRETTO_API_KEY,
-        promptTemplateChat: [
-          {
-            role: "assistant",
-            content: assistant.instructions,
-          },
-          {
-            role: "chat_history",
-            content: "{chat_history}",
-          },
-        ],
-        promptTemplateName: assistant.name ?? assistant.id,
-        apiName:
-          librettoParams.opts?.promptTemplateName ??
-          assistant.name ??
-          assistant.id,
-        prompt: {},
-        chatId: threadId,
-        feedbackKey: msg.id,
       });
 
       await this.threadManager.setCursor(threadId, msg.id);
     }
+  }
+  protected async prepareAndSendEvent({
+    params,
+    librettoParams,
+    runCreateParams,
+    assistant,
+    chatId,
+    feedbackKey,
+    response,
+    responseErrors,
+  }: {
+    response?: string | null | undefined;
+    params: Record<string, any>;
+    librettoParams: RunParams;
+    runCreateParams: RunCreateParamsNonStreaming;
+    assistant: OpenAI.Beta.Assistants.Assistant;
+    chatId: string;
+    feedbackKey?: string;
+    responseErrors?: string[];
+  }) {
+    await send_event({
+      responseTime: 1,
+      response,
+      responseErrors,
+      params,
+      apiKey:
+        librettoParams?.opts?.apiKey ??
+        this.config.apiKey ??
+        process.env.LIBRETTO_API_KEY,
+      promptTemplateChat: [
+        {
+          role: "assistant",
+          content: assistant.instructions,
+        },
+        {
+          role: "chat_history",
+          content: "{chat_history}",
+        },
+      ],
+      modelParameters: {
+        modelProvider: "openai",
+        modelType: "assistants",
+        model: runCreateParams.model ?? assistant.model,
+        ...runCreateParams,
+      },
+      promptTemplateName: assistant.name ?? assistant.id,
+      apiName:
+        librettoParams?.opts?.promptTemplateName ??
+        assistant.name ??
+        assistant.id,
+      prompt: {},
+      chatId,
+      feedbackKey,
+    });
   }
 }

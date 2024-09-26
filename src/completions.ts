@@ -10,7 +10,7 @@ import {
   Completions,
 } from "openai/resources/completions";
 import { Stream } from "openai/streaming";
-import { LibrettoConfig, send_event } from ".";
+import { LibrettoConfig, LibrettoCreateParams, send_event } from ".";
 import { PiiRedactor } from "./pii";
 import { getResolvedPrompt, getResolvedStream } from "./resolvers";
 
@@ -86,8 +86,8 @@ export class LibrettoCompletions extends Completions {
     );
 
     // note: not awaiting the result of this
-    finalResultPromise.then(
-      async ({ response, finish_reason, logprobs, usage }) => {
+    finalResultPromise
+      .then(async ({ response, finish_reason, logprobs, usage }) => {
         const responseTime = Date.now() - now;
         let params = libretto?.templateParams ?? {};
 
@@ -101,38 +101,121 @@ export class LibrettoCompletions extends Completions {
           }
         }
 
-        await send_event({
+        await this.prepareAndSendEvent({
           responseTime,
           response,
-          responseMetrics: {
+          usage,
+          finish_reason,
+          logprobs,
+          params,
+          template,
+          resolvedPromptStr,
+          resolvedPromptTemplateName,
+          feedbackKey,
+          openaiBody,
+          librettoParams: libretto,
+        });
+      })
+      .catch(async (error) => {
+        let params = libretto?.templateParams ?? {};
+        const responseTime = Date.now() - now;
+        // Redact PII before recording the event
+        if (this.piiRedactor) {
+          const redactor = this.piiRedactor;
+          try {
+            params = redactor.redact(params);
+          } catch (err) {
+            console.log("Failed to redact PII", err);
+          }
+        }
+
+        await this.prepareAndSendEvent({
+          responseErrors: [JSON.stringify(error.response)],
+          responseTime,
+          resolvedPromptStr,
+          resolvedPromptTemplateName,
+          params,
+          template,
+          librettoParams: libretto,
+          feedbackKey,
+          openaiBody,
+        });
+      });
+
+    return returnValue as Completion | Stream<Completion>;
+  }
+
+  private async prepareAndSendEvent({
+    response,
+    responseTime,
+    responseErrors,
+    params,
+    librettoParams,
+    usage,
+    template,
+    resolvedPromptTemplateName,
+    finish_reason,
+    logprobs,
+    openaiBody,
+    feedbackKey,
+    resolvedPromptStr,
+  }: {
+    response?: string | null | undefined;
+    responseTime?: number;
+    responseErrors?: string[];
+    params: Record<string, any>;
+    librettoParams: LibrettoCreateParams | undefined;
+    template: string | null;
+    resolvedPromptTemplateName?: string | undefined;
+    usage?: Core.Completions.CompletionUsage | undefined;
+    finish_reason?:
+      | OpenAI.Completions.CompletionChoice["finish_reason"]
+      | OpenAI.ChatCompletion.Choice["finish_reason"]
+      | undefined
+      | null;
+    logprobs?:
+      | OpenAI.Completions.CompletionChoice.Logprobs
+      | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
+      | undefined
+      | null;
+    openaiBody: any;
+    feedbackKey?: string;
+    resolvedPromptStr?: string | null;
+  }) {
+    const responseMetrics =
+      !usage && !finish_reason && !logprobs
+        ? {
             usage,
             finish_reason,
             logprobs,
-          },
-          params: params,
-          apiKey:
-            libretto?.apiKey ??
-            this.config.apiKey ??
-            process.env.LIBRETTO_API_KEY,
-          promptTemplateText:
-            libretto?.templateText ?? template ?? resolvedPromptStr,
-          promptTemplateName: resolvedPromptTemplateName,
-          apiName:
-            libretto?.promptTemplateName ?? this.config.promptTemplateName,
-          prompt: {},
-          chatId: libretto?.chatId ?? this.config.chatId,
-          parentEventId: libretto?.parentEventId,
-          context: libretto?.context,
-          feedbackKey,
-          modelParameters: {
-            modelProvider: "openai",
-            modelType: "completion",
-            ...openaiBody,
-          },
-        });
-      },
-    );
+          }
+        : undefined;
 
-    return returnValue as Completion | Stream<Completion>;
+    await send_event({
+      responseTime,
+      response,
+      responseErrors,
+      responseMetrics,
+      params,
+      apiKey:
+        librettoParams?.apiKey ??
+        this.config.apiKey ??
+        process.env.LIBRETTO_API_KEY,
+      promptTemplateText:
+        librettoParams?.templateText ?? template ?? resolvedPromptStr,
+      promptTemplateName: resolvedPromptTemplateName,
+      apiName:
+        librettoParams?.promptTemplateName ?? this.config.promptTemplateName,
+      prompt: {},
+      chatId: librettoParams?.chatId ?? this.config.chatId,
+      parentEventId: librettoParams?.parentEventId,
+      context: librettoParams?.context,
+      feedbackKey,
+      modelParameters: {
+        modelProvider: "openai",
+        modelType: "completion",
+        ...openaiBody,
+      },
+    });
   }
 }

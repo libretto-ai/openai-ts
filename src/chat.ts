@@ -12,7 +12,7 @@ import {
   Completions,
 } from "openai/resources/chat/completions";
 import { Stream } from "openai/streaming";
-import { LibrettoConfig, send_event } from ".";
+import { LibrettoConfig, LibrettoCreateParams, send_event } from ".";
 import { PiiRedactor } from "./pii";
 import {
   getResolvedMessages,
@@ -98,57 +98,151 @@ class LibrettoChatCompletions extends Completions {
     );
 
     // note: not awaiting the result of this
-    finalResultPromise.then(
-      async ({ response, tool_calls, finish_reason, logprobs, usage }) => {
+    finalResultPromise
+      .then(
+        async ({ response, tool_calls, finish_reason, logprobs, usage }) => {
+          const responseTime = Date.now() - now;
+          let params = libretto?.templateParams ?? {};
+
+          // Redact PII before recording the event
+          if (this.piiRedactor) {
+            const redactor = this.piiRedactor;
+            try {
+              response = redactor.redact(response);
+              params = redactor.redact(params);
+              tool_calls = tool_calls.map((tool_call) => ({
+                id: tool_call.id,
+                name: tool_call.name,
+                argsAsJson: redactor.redact(tool_call.argsAsJson),
+              }));
+            } catch (err) {
+              console.log("Failed to redact PII", err);
+            }
+          }
+          const eventResponse = tool_calls.length
+            ? reJsonToolCalls(tool_calls)
+            : response;
+
+          await this.prepareAndSendEvent({
+            responseTime,
+            response: eventResponse,
+            params,
+            feedbackKey,
+            template,
+            resolvedPromptTemplateName,
+            resolvedMessages,
+            tools,
+            usage,
+            finish_reason,
+            logprobs,
+            librettoParams: libretto,
+            openaiBody,
+          });
+        },
+      )
+      .catch(async (error) => {
         const responseTime = Date.now() - now;
+        // Capture OpenAI API errors here
         let params = libretto?.templateParams ?? {};
 
         // Redact PII before recording the event
         if (this.piiRedactor) {
           const redactor = this.piiRedactor;
           try {
-            response = redactor.redact(response);
             params = redactor.redact(params);
-            tool_calls = tool_calls.map((tool_call) => ({
-              id: tool_call.id,
-              name: tool_call.name,
-              argsAsJson: redactor.redact(tool_call.argsAsJson),
-            }));
           } catch (err) {
             console.warn("Failed to redact PII", err);
           }
         }
-        const eventResponse = tool_calls.length
-          ? reJsonToolCalls(tool_calls)
-          : response;
-
-        await send_event({
+        await this.prepareAndSendEvent({
           responseTime,
-          response: eventResponse,
-          responseMetrics: { usage, finish_reason, logprobs },
-          params: params,
-          apiKey:
-            libretto?.apiKey ??
-            this.config.apiKey ??
-            process.env.LIBRETTO_API_KEY,
-          promptTemplateChat:
-            libretto?.templateChat ?? template ?? resolvedMessages,
-          promptTemplateName: resolvedPromptTemplateName,
-          apiName:
-            libretto?.promptTemplateName ?? this.config.promptTemplateName,
-          prompt: {},
-          chatId: libretto?.chatId ?? this.config.chatId,
-          parentEventId: libretto?.parentEventId,
+          responseErrors: [JSON.stringify(error.response)],
+          params,
           feedbackKey,
-          modelParameters: {
-            modelProvider: "openai",
-            modelType: "chat",
-            ...openaiBody,
-          },
-          tools: tools,
+          template,
+          resolvedPromptTemplateName,
+          resolvedMessages,
+          tools,
+          librettoParams: libretto,
+          openaiBody,
         });
-      },
-    );
+      });
     return returnValue as ChatCompletion | Stream<ChatCompletionChunk>;
+  }
+
+  protected async prepareAndSendEvent({
+    response,
+    responseTime,
+    responseErrors,
+    params,
+    librettoParams,
+    usage,
+    template,
+    resolvedMessages,
+    resolvedPromptTemplateName,
+    finish_reason,
+    logprobs,
+    openaiBody,
+    feedbackKey,
+    tools,
+  }: {
+    response?: string | null | undefined;
+    responseTime?: number;
+    responseErrors?: string[];
+    params: Record<string, any>;
+    librettoParams: LibrettoCreateParams | undefined;
+    template: Core.Chat.Completions.ChatCompletionMessageParam[] | null;
+    resolvedMessages: Core.Chat.Completions.ChatCompletionMessageParam[];
+    resolvedPromptTemplateName?: string | undefined;
+    usage?: Core.Completions.CompletionUsage | undefined;
+    finish_reason?:
+      | OpenAI.Completions.CompletionChoice["finish_reason"]
+      | OpenAI.ChatCompletion.Choice["finish_reason"]
+      | undefined
+      | null;
+    logprobs?:
+      | OpenAI.Completions.CompletionChoice.Logprobs
+      | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
+      | undefined
+      | null;
+    openaiBody: any;
+    feedbackKey?: string;
+    tools: Core.Chat.Completions.ChatCompletionTool[] | undefined;
+  }) {
+    const responseMetrics =
+      !usage && !finish_reason && !logprobs
+        ? {
+            usage,
+            finish_reason,
+            logprobs,
+          }
+        : undefined;
+
+    await send_event({
+      responseTime,
+      response,
+      responseErrors,
+      responseMetrics,
+      params: params,
+      apiKey:
+        librettoParams?.apiKey ??
+        this.config.apiKey ??
+        process.env.LIBRETTO_API_KEY,
+      promptTemplateChat:
+        librettoParams?.templateChat ?? template ?? resolvedMessages,
+      promptTemplateName: resolvedPromptTemplateName,
+      apiName:
+        librettoParams?.promptTemplateName ?? this.config.promptTemplateName,
+      prompt: {},
+      chatId: librettoParams?.chatId ?? this.config.chatId,
+      parentEventId: librettoParams?.parentEventId,
+      feedbackKey,
+      modelParameters: {
+        modelProvider: "openai",
+        modelType: "chat",
+        ...openaiBody,
+      },
+      tools: tools,
+    });
   }
 }
