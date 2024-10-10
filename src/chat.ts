@@ -209,20 +209,11 @@ class LibrettoChatCompletions extends Completions {
     feedbackKey?: string;
     tools: Core.Chat.Completions.ChatCompletionTool[] | undefined;
   }) {
-    const responseMetrics =
-      !usage && !finish_reason && !logprobs
-        ? {
-            usage,
-            finish_reason,
-            logprobs,
-          }
-        : undefined;
-
     await send_event({
       responseTime,
       response,
       responseErrors,
-      responseMetrics,
+      responseMetrics: { usage, finish_reason, logprobs },
       params: params,
       apiKey:
         librettoParams?.apiKey ??
