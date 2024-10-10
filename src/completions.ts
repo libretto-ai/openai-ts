@@ -182,20 +182,15 @@ export class LibrettoCompletions extends Completions {
     feedbackKey?: string;
     resolvedPromptStr?: string | null;
   }) {
-    const responseMetrics =
-      !usage && !finish_reason && !logprobs
-        ? {
-            usage,
-            finish_reason,
-            logprobs,
-          }
-        : undefined;
-
     await send_event({
       responseTime,
       response,
       responseErrors,
-      responseMetrics,
+      responseMetrics: {
+        usage,
+        finish_reason,
+        logprobs,
+      },
       params,
       apiKey:
         librettoParams?.apiKey ??
