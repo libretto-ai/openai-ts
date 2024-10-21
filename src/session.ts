@@ -1,3 +1,4 @@
+import { RateLimiter } from "limiter";
 import OpenAI from "openai";
 import {
   type CompletionCreateParamsNonStreaming,
@@ -20,15 +21,18 @@ interface OpenAIChatParameters
   modelProvider: "openai";
   modelType: "chat";
 }
+
 interface OpenAICompletionParameters
   extends Omit<CompletionCreateParamsNonStreaming, "prompt"> {
   modelProvider: "openai";
   modelType: "completion";
 }
+
 interface OpenAIThreadRunParameters extends RunCreateParamsNonStreaming {
   modelProvider: "openai";
   modelType: "assistants";
 }
+
 export type ModelParameters =
   | OpenAIChatParameters
   | OpenAICompletionParameters
@@ -51,6 +55,7 @@ export interface EventMetadata {
   context?: Record<string, any>;
   tools?: any[];
 }
+
 export interface PromptEvent {
   params: Record<string, any>;
   /** Included after response */
@@ -79,6 +84,17 @@ export interface PromptEvent {
 
 export type Event = EventMetadata & PromptEvent;
 
+const logRateLimiters: Record<number, RateLimiter> = {
+  429: new RateLimiter({
+    tokensPerInterval: 1,
+    interval: "second",
+  }),
+  499: new RateLimiter({
+    tokensPerInterval: 1,
+    interval: "second",
+  }),
+};
+
 export async function send_event(event: Event) {
   if (!event.apiKey) {
     return;
@@ -104,12 +120,26 @@ export async function send_event(event: Event) {
 
     return responseJson;
   } catch (e) {
-    // don't suppress errors if we're in debug mode OR if we get a 4xx response because we made the request wrong.
-    if (
-      process.env.LIBRETTO_DEBUG === "true" ||
-      (status < 500 && status >= 400)
-    ) {
+    const emitLog = () => {
       console.error("Failed to send event to libretto:", e);
+    };
+
+    // Always log if LIBRETTO_DEBUG is on
+    if (process.env.LIBRETTO_DEBUG === "true") {
+      emitLog();
+      return;
+    }
+
+    // Never log for non-client errors
+    if (status < 400 || status >= 500) {
+      return;
+    }
+
+    // Log unless we're over our limit for this status code
+    const limiter = logRateLimiters[status];
+    if (!limiter || limiter.tryRemoveTokens(1)) {
+      emitLog();
+      return;
     }
   }
 }
