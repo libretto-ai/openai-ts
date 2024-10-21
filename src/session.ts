@@ -143,13 +143,15 @@ export async function send_event(event: Event) {
     }
   }
 }
+
 async function extractJsonBody(response: Response) {
+  const body = await response.text();
   try {
-    const responseJson = await response.json();
-    return responseJson;
-  } catch (e) {
+    return JSON.parse(body);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_err) {
     throw new Error(
-      `Unparseable response: ${response.status} ${response.statusText} ${e}`,
+      `Unparseable response (${response.status} ${response.statusText}): ${body}`,
     );
   }
 }
