@@ -6,6 +6,7 @@ import {
 } from "openai/resources";
 import { RunCreateParamsNonStreaming } from "openai/resources/beta/threads/runs/runs";
 import { type ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat";
+import pLimit from "p-limit";
 
 function getUrl(apiName: string, environmentName: string): string {
   if (process.env[environmentName]) {
@@ -95,6 +96,10 @@ const logRateLimiters: Record<number, RateLimiter> = {
   }),
 };
 
+const SEND_EVENT_CONCURRENCY_LIMIT = 25;
+const SEND_EVENT_MAX_PENDING = 1000;
+const sendEventLimiter = pLimit(SEND_EVENT_CONCURRENCY_LIMIT);
+
 export async function send_event(event: Event) {
   if (!event.apiKey) {
     return;
@@ -105,7 +110,12 @@ export async function send_event(event: Event) {
   let status = 0;
 
   try {
-    const response = await fetch(url, {
+    if (sendEventLimiter.pendingCount >= SEND_EVENT_MAX_PENDING) {
+      status = 429; // Simulate "Too Many Requests"
+      throw new Error(`too many pending requests (${SEND_EVENT_MAX_PENDING})`);
+    }
+
+    const response = await sendEventLimiter(fetch, url, {
       method: "POST",
       body,
       headers: {
