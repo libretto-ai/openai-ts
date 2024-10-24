@@ -85,8 +85,7 @@ export class LibrettoCompletions extends Completions {
       false,
     );
 
-    // note: not awaiting the result of this
-    finalResultPromise
+    const sendEventPromise = finalResultPromise
       .then(async ({ response, finish_reason, logprobs, usage }) => {
         const responseTime = Date.now() - now;
         let params = libretto?.templateParams ?? {};
@@ -141,6 +140,10 @@ export class LibrettoCompletions extends Completions {
           openaiBody,
         });
       });
+
+    if (this.config.waitForEvent) {
+      await sendEventPromise;
+    }
 
     return returnValue as Completion | Stream<Completion>;
   }

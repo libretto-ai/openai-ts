@@ -1,7 +1,7 @@
 import { ChatCompletionMessage } from "openai/resources/chat";
 
 export { OpenAI } from "./client";
-export { Event, Feedback, sendFeedback, send_event } from "./session";
+export { Event, Feedback, send_event, sendFeedback } from "./session";
 export { f, objectTemplate } from "./template";
 
 export type LibrettoConfig = {
@@ -10,6 +10,7 @@ export type LibrettoConfig = {
   allowUnnamedPrompts?: boolean;
   redactPii?: boolean;
   chatId?: string;
+  waitForEvent?: boolean;
 };
 
 export type LibrettoCreateParams = {
