@@ -167,7 +167,7 @@ class LibrettoChatCompletions extends Completions {
         });
       });
 
-    if (this.config.blocking) {
+    if (this.config.waitForEvent) {
       await sendEventPromise;
     }
 

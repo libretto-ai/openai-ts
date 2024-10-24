@@ -10,7 +10,7 @@ export type LibrettoConfig = {
   allowUnnamedPrompts?: boolean;
   redactPii?: boolean;
   chatId?: string;
-  blocking?: boolean;
+  waitForEvent?: boolean;
 };
 
 export type LibrettoCreateParams = {
