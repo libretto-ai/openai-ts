@@ -97,8 +97,7 @@ class LibrettoChatCompletions extends Completions {
       true,
     );
 
-    // note: not awaiting the result of this
-    finalResultPromise
+    const sendEventPromise = finalResultPromise
       .then(
         async ({ response, tool_calls, finish_reason, logprobs, usage }) => {
           const responseTime = Date.now() - now;
@@ -167,6 +166,11 @@ class LibrettoChatCompletions extends Completions {
           openaiBody,
         });
       });
+
+    if (this.config.blocking) {
+      await sendEventPromise;
+    }
+
     return returnValue as ChatCompletion | Stream<ChatCompletionChunk>;
   }
 
