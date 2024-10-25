@@ -1,7 +1,7 @@
 {
   "name": "@libretto/openai",
   "main": "lib/src/index.js",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "types": "lib/src/index.d.ts",
   "repository": {
     "type": "git",
@@ -40,7 +40,7 @@
   "dependencies": {
     "@libretto/redact-pii-light": "^1.0.1",
     "limiter": "^2.1.0",
-    "p-limit": "^6.1.0",
+    "p-limit": "^3.1.0",
     "p-queue": "^6.0.0"
   }
 }
