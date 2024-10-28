@@ -19,6 +19,7 @@ import {
   getResolvedStream,
   reJsonToolCalls,
 } from "./resolvers";
+import { ResponseMetrics } from "./session";
 
 export class LibrettoChat extends Chat {
   constructor(
@@ -98,47 +99,43 @@ class LibrettoChatCompletions extends Completions {
     );
 
     const sendEventPromise = finalResultPromise
-      .then(
-        async ({ response, tool_calls, finish_reason, logprobs, usage }) => {
-          const responseTime = Date.now() - now;
-          let params = libretto?.templateParams ?? {};
+      .then(async ({ response, tool_calls, responseMetrics }) => {
+        const responseTime = Date.now() - now;
+        let params = libretto?.templateParams ?? {};
 
-          // Redact PII before recording the event
-          if (this.piiRedactor) {
-            const redactor = this.piiRedactor;
-            try {
-              response = redactor.redact(response);
-              params = redactor.redact(params);
-              tool_calls = tool_calls.map((tool_call) => ({
-                id: tool_call.id,
-                name: tool_call.name,
-                argsAsJson: redactor.redact(tool_call.argsAsJson),
-              }));
-            } catch (err) {
-              console.log("Failed to redact PII", err);
-            }
+        // Redact PII before recording the event
+        if (this.piiRedactor) {
+          const redactor = this.piiRedactor;
+          try {
+            response = redactor.redact(response);
+            params = redactor.redact(params);
+            tool_calls = tool_calls.map((tool_call) => ({
+              id: tool_call.id,
+              name: tool_call.name,
+              argsAsJson: redactor.redact(tool_call.argsAsJson),
+            }));
+          } catch (err) {
+            console.log("Failed to redact PII", err);
           }
-          const eventResponse = tool_calls.length
-            ? reJsonToolCalls(tool_calls)
-            : response;
+        }
+        const eventResponse = tool_calls.length
+          ? reJsonToolCalls(tool_calls)
+          : response;
 
-          await this.prepareAndSendEvent({
-            responseTime,
-            response: eventResponse,
-            params,
-            feedbackKey,
-            template,
-            resolvedPromptTemplateName,
-            resolvedMessages,
-            tools,
-            usage,
-            finish_reason,
-            logprobs,
-            librettoParams: libretto,
-            openaiBody,
-          });
-        },
-      )
+        await this.prepareAndSendEvent({
+          responseTime,
+          response: eventResponse,
+          params,
+          feedbackKey,
+          template,
+          resolvedPromptTemplateName,
+          resolvedMessages,
+          tools,
+          responseMetrics,
+          librettoParams: libretto,
+          openaiBody,
+        });
+      })
       .catch(async (error) => {
         const responseTime = Date.now() - now;
         // Capture OpenAI API errors here
@@ -180,12 +177,10 @@ class LibrettoChatCompletions extends Completions {
     responseErrors,
     params,
     librettoParams,
-    usage,
+    responseMetrics,
     template,
     resolvedMessages,
     resolvedPromptTemplateName,
-    finish_reason,
-    logprobs,
     openaiBody,
     feedbackKey,
     tools,
@@ -198,17 +193,7 @@ class LibrettoChatCompletions extends Completions {
     template: Core.Chat.Completions.ChatCompletionMessageParam[] | null;
     resolvedMessages: Core.Chat.Completions.ChatCompletionMessageParam[];
     resolvedPromptTemplateName?: string | undefined;
-    usage?: Core.Completions.CompletionUsage | undefined;
-    finish_reason?:
-      | OpenAI.Completions.CompletionChoice["finish_reason"]
-      | OpenAI.ChatCompletion.Choice["finish_reason"]
-      | undefined
-      | null;
-    logprobs?:
-      | OpenAI.Completions.CompletionChoice.Logprobs
-      | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
-      | undefined
-      | null;
+    responseMetrics?: ResponseMetrics;
     openaiBody: any;
     feedbackKey?: string;
     tools: Core.Chat.Completions.ChatCompletionTool[] | undefined;
@@ -217,7 +202,7 @@ class LibrettoChatCompletions extends Completions {
       responseTime,
       response,
       responseErrors,
-      responseMetrics: { usage, finish_reason, logprobs },
+      responseMetrics,
       params: params,
       apiKey:
         librettoParams?.apiKey ??

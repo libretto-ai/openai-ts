@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { APIPromise } from "openai/core";
 import { ChatCompletionMessageParam } from "openai/resources/chat";
 import { Stream } from "openai/streaming";
+import { ResponseMetrics } from "./session";
 import {
   formatTemplate,
   getTemplate,
@@ -20,17 +21,7 @@ interface ResolvedAPIResult {
   response: string | null | undefined;
   /** Calls to any tools */
   tool_calls: ToolCallAsJsonFragment[];
-  usage: OpenAI.Completions.CompletionUsage | undefined;
-  finish_reason:
-    | OpenAI.Completions.CompletionChoice["finish_reason"]
-    | OpenAI.ChatCompletion.Choice["finish_reason"]
-    | undefined
-    | null;
-  logprobs:
-    | OpenAI.Completions.CompletionChoice.Logprobs
-    | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
-    | undefined
-    | null;
+  responseMetrics?: ResponseMetrics;
 }
 
 /** This function papers over the difference between streamed and unstreamed
@@ -105,26 +96,33 @@ type PromptString = string | string[] | number[] | number[][] | null;
 function getStaticChatCompletion(
   result: OpenAI.Chat.Completions.ChatCompletion,
 ): ResolvedAPIResult {
+  // These don't change regardless of the branch we go into
+  const responseMetrics: ResponseMetrics = {
+    usage: result.usage,
+    finish_reason: result.choices?.[0]?.finish_reason,
+    logprobs: result.choices?.[0]?.logprobs,
+  };
+
   if (result.choices[0].message.content) {
     return {
       response: result.choices[0].message.content,
       tool_calls: [],
-      usage: result.usage,
-      finish_reason: result.choices[0].finish_reason,
-      logprobs: result.choices[0].logprobs,
+      responseMetrics,
     };
   }
+
+  // Deprecated Function calls
   if (result.choices[0].message.function_call) {
     return {
       response: JSON.stringify({
         function_call: result.choices[0].message.function_call,
       }),
       tool_calls: [],
-      usage: result.usage,
-      finish_reason: result.choices[0].finish_reason,
-      logprobs: result.choices[0].logprobs,
+      responseMetrics,
     };
   }
+
+  // Tools Calls
   if (result.choices[0].message.tool_calls) {
     return {
       response: undefined,
@@ -135,17 +133,15 @@ function getStaticChatCompletion(
           argsAsJson: tool_call.function.arguments,
         }),
       ),
-      usage: result.usage,
-      finish_reason: result.choices[0].finish_reason,
-      logprobs: result.choices[0].logprobs,
+      responseMetrics,
     };
   }
+
+  // No content
   return {
     response: undefined,
     tool_calls: [],
-    usage: result.usage,
-    finish_reason: result.choices[0].finish_reason,
-    logprobs: result.choices[0].logprobs,
+    responseMetrics,
   };
 }
 
@@ -156,26 +152,26 @@ function getStaticCompletion(
     return {
       response: null,
       tool_calls: [],
-      usage: undefined,
-      finish_reason: undefined,
-      logprobs: undefined,
     };
   }
+
+  // Handle the text completion
   if (result.choices[0].text) {
     return {
       response: result.choices[0].text,
       tool_calls: [],
-      usage: result.usage,
-      finish_reason: result.choices[0].finish_reason,
-      logprobs: result.choices[0].logprobs,
+      responseMetrics: {
+        usage: result.usage,
+        finish_reason: result.choices[0].finish_reason,
+        logprobs: result.choices[0].logprobs,
+      },
     };
   }
+
+  // Catch all
   return {
     response: undefined,
     tool_calls: [],
-    usage: result.usage,
-    finish_reason: undefined,
-    logprobs: result.choices[0].logprobs,
   };
 }
 export function getResolvedMessages(
@@ -329,9 +325,11 @@ class WrappedStream<
           }),
         ),
         response: accumulatedResult.join(""),
-        usage: this.responseUsage,
-        finish_reason: this.finishReason,
-        logprobs: this.logProbs,
+        responseMetrics: {
+          usage: this.responseUsage,
+          finish_reason: this.finishReason,
+          logprobs: this.logProbs,
+        },
       });
     }
   }

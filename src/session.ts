@@ -1,9 +1,6 @@
 import { RateLimiter } from "limiter";
 import OpenAI from "openai";
-import {
-  type CompletionCreateParamsNonStreaming,
-  type CompletionUsage,
-} from "openai/resources";
+import { type CompletionCreateParamsNonStreaming } from "openai/resources";
 import { RunCreateParamsNonStreaming } from "openai/resources/beta/threads/runs/runs";
 import { type ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat";
 import pLimit from "p-limit";
@@ -57,6 +54,24 @@ export interface EventMetadata {
   tools?: any[];
 }
 
+/**
+ * NOTE: This should match the expected ResponseMetrics type that is on our
+ * server side.
+ */
+export interface ResponseMetrics {
+  usage: OpenAI.Completions.CompletionUsage | undefined;
+  finish_reason:
+    | OpenAI.Completions.CompletionChoice["finish_reason"]
+    | OpenAI.ChatCompletion.Choice["finish_reason"]
+    | undefined
+    | null;
+  logprobs:
+    | OpenAI.Completions.CompletionChoice.Logprobs
+    | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
+    | undefined
+    | null;
+}
+
 export interface PromptEvent {
   params: Record<string, any>;
   /** Included after response */
@@ -66,19 +81,7 @@ export interface PromptEvent {
   /** Included only if there is an error from openai, or error in validation */
   responseErrors?: string[];
 
-  responseMetrics?: {
-    usage: CompletionUsage | undefined;
-    finish_reason:
-      | OpenAI.Completions.CompletionChoice["finish_reason"]
-      | OpenAI.ChatCompletion.Choice["finish_reason"]
-      | undefined
-      | null;
-    logprobs:
-      | OpenAI.Completions.CompletionChoice.Logprobs
-      | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
-      | undefined
-      | null;
-  };
+  responseMetrics?: ResponseMetrics;
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   prompt: {}; //hack
 }
