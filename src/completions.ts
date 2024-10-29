@@ -13,6 +13,7 @@ import { Stream } from "openai/streaming";
 import { LibrettoConfig, LibrettoCreateParams, send_event } from ".";
 import { PiiRedactor } from "./pii";
 import { getResolvedPrompt, getResolvedStream } from "./resolvers";
+import { ResponseMetrics } from "./session";
 
 export class LibrettoCompletions extends Completions {
   protected piiRedactor?: PiiRedactor;
@@ -86,7 +87,7 @@ export class LibrettoCompletions extends Completions {
     );
 
     const sendEventPromise = finalResultPromise
-      .then(async ({ response, finish_reason, logprobs, usage }) => {
+      .then(async ({ response, responseMetrics }) => {
         const responseTime = Date.now() - now;
         let params = libretto?.templateParams ?? {};
 
@@ -103,9 +104,7 @@ export class LibrettoCompletions extends Completions {
         await this.prepareAndSendEvent({
           responseTime,
           response,
-          usage,
-          finish_reason,
-          logprobs,
+          responseMetrics,
           params,
           template,
           resolvedPromptStr,
@@ -154,11 +153,9 @@ export class LibrettoCompletions extends Completions {
     responseErrors,
     params,
     librettoParams,
-    usage,
+    responseMetrics,
     template,
     resolvedPromptTemplateName,
-    finish_reason,
-    logprobs,
     openaiBody,
     feedbackKey,
     resolvedPromptStr,
@@ -170,17 +167,7 @@ export class LibrettoCompletions extends Completions {
     librettoParams: LibrettoCreateParams | undefined;
     template: string | null;
     resolvedPromptTemplateName?: string | undefined;
-    usage?: Core.Completions.CompletionUsage | undefined;
-    finish_reason?:
-      | OpenAI.Completions.CompletionChoice["finish_reason"]
-      | OpenAI.ChatCompletion.Choice["finish_reason"]
-      | undefined
-      | null;
-    logprobs?:
-      | OpenAI.Completions.CompletionChoice.Logprobs
-      | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
-      | undefined
-      | null;
+    responseMetrics?: ResponseMetrics;
     openaiBody: any;
     feedbackKey?: string;
     resolvedPromptStr?: string | null;
@@ -189,11 +176,7 @@ export class LibrettoCompletions extends Completions {
       responseTime,
       response,
       responseErrors,
-      responseMetrics: {
-        usage,
-        finish_reason,
-        logprobs,
-      },
+      responseMetrics,
       params,
       apiKey:
         librettoParams?.apiKey ??

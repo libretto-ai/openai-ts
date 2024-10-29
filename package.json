@@ -32,10 +32,11 @@
     "prettier": "^3.3.3",
     "ts-jest": "^29.2.5",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "zod": "^3.23.8"
   },
   "peerDependencies": {
-    "openai": "^4.52.0"
+    "openai": "^4.68.4"
   },
   "dependencies": {
     "@libretto/redact-pii-light": "^1.0.1",
