@@ -73,6 +73,8 @@ async function main() {
   // This uses the original OpenAI API to test out parse + refusals.
   // NOTE: This does NOT work right now. We need to update our code to handle this Parse API
   // ALSO, This just does not actually get the "refusal" to be populated.
+
+  // https://platform.openai.com/docs/guides/structured-outputs/how-to-use?lang=node.js
   console.log("Testing a refusal from the LLM...");
   const refusalCompletion = await originalOpenai.beta.chat.completions.parse({
     messages: [
