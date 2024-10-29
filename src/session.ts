@@ -70,7 +70,6 @@ export interface ResponseMetrics {
     | OpenAI.Chat.Completions.ChatCompletion.Choice.Logprobs
     | undefined
     | null;
-  refusal: string | null;
 }
 
 export interface PromptEvent {
