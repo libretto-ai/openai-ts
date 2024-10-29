@@ -11,7 +11,8 @@
         "--experimental-specifier-resolution=node",
         "ts-node"
       ],
-      "program": "${workspaceFolder}/examples/chathistory.ts",
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "program": "${workspaceRoot}/examples/simple.ts",
       "cwd": "${workspaceRoot}",
       "internalConsoleOptions": "openOnSessionStart",
       "env": {

@@ -35,7 +35,7 @@
     "typescript": "^5.6.3"
   },
   "peerDependencies": {
-    "openai": "^4.52.0"
+    "openai": "^4.68.4"
   },
   "dependencies": {
     "@libretto/redact-pii-light": "^1.0.1",

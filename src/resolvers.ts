@@ -50,6 +50,7 @@ export async function getResolvedStream(
     | OpenAI.Completions.Completion;
   finalResultPromise: Promise<ResolvedAPIResult>;
 }> {
+  // Handle stream
   if (stream) {
     const chunkStream = (await resultPromise) as
       | Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
@@ -65,6 +66,8 @@ export async function getResolvedStream(
     };
     // TODO: deal with streamed completions
   }
+
+  // Get the static result
   const staticResult = (await resultPromise) as
     | OpenAI.Chat.Completions.ChatCompletion
     | OpenAI.Completions.Completion;
@@ -83,6 +86,8 @@ export async function getResolvedStream(
       ),
     };
   }
+
+  // Completion style response
   return {
     returnValue: await resultPromise,
     finalResultPromise: Promise.resolve(
@@ -96,11 +101,15 @@ type PromptString = string | string[] | number[] | number[][] | null;
 function getStaticChatCompletion(
   result: OpenAI.Chat.Completions.ChatCompletion,
 ): ResolvedAPIResult {
+  // See if there is a refusal for the message content
+  const refusal = result.choices?.[0]?.message?.refusal;
+
   // These don't change regardless of the branch we go into
   const responseMetrics: ResponseMetrics = {
     usage: result.usage,
     finish_reason: result.choices?.[0]?.finish_reason,
     logprobs: result.choices?.[0]?.logprobs,
+    refusal,
   };
 
   if (result.choices[0].message.content) {
@@ -164,6 +173,7 @@ function getStaticCompletion(
         usage: result.usage,
         finish_reason: result.choices[0].finish_reason,
         logprobs: result.choices[0].logprobs,
+        refusal: null,
       },
     };
   }
@@ -272,6 +282,7 @@ class WrappedStream<
             chatItem.libretto = {};
           }
           chatItem.libretto.feedbackKey = this.feedbackKey;
+
           if (chatItem.choices[0].delta.content) {
             accumulatedResult.push(chatItem.choices[0].delta.content);
           } else if (chatItem.choices[0].delta.tool_calls) {
@@ -329,6 +340,7 @@ class WrappedStream<
           usage: this.responseUsage,
           finish_reason: this.finishReason,
           logprobs: this.logProbs,
+          refusal: null,
         },
       });
     }
