@@ -16,7 +16,7 @@
       "cwd": "${workspaceRoot}",
       "internalConsoleOptions": "openOnSessionStart",
       "env": {
-        "LIBRETTO_API_PREFIX": "http://localhost:3000/api"
+        "LIBRETTO_API_PREFIX": "http://localhost:3000/api",
       }
     }
   ]
