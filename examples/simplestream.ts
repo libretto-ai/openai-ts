@@ -2,17 +2,18 @@ import crypto from "crypto";
 import { f, objectTemplate } from "../src";
 import { OpenAI } from "../src/client";
 
-async function main() {
+async function testStreamingChatAPI() {
   const openai = new OpenAI({
     // apiKey: process.env.OPENAI_API_KEY
   });
+  let finalResponse = "";
 
   console.log("Testing Streaming Chat API...");
   const completion = await openai.chat.completions.create({
     messages: objectTemplate([
       { role: "user", content: "Tell a 20 word story about {name}" },
     ]),
-    model: "gpt-3.5-turbo",
+    model: "gpt-4o-mini",
     stream: true,
     libretto: {
       promptTemplateName: "ts-client-test-chat",
@@ -22,20 +23,50 @@ async function main() {
   });
   for await (const result of completion) {
     console.log("Streamed Chat API replied with: ", result.choices);
+    if (!result.choices[0].finish_reason) {
+      finalResponse += result.choices[0].delta.content;
+    }
   }
+  console.log("Final response: ", finalResponse);
+}
+
+async function testStreamingCompletionAPI() {
+  const openai = new OpenAI({
+    // apiKey: process.env.OPENAI_API_KEY
+  });
+
   console.log("Testing Streaming Completion API...");
-  const completion2 = await openai.completions.create({
+  const completion = await openai.completions.create({
     prompt: f`Tell a 20 word story about {name}` as unknown as string,
     model: "gpt-3.5-turbo-instruct",
     stream: true,
     libretto: {
-      promptTemplateName: "ts-client-test-chat",
+      promptTemplateName: "ts-client-test-completion",
       templateParams: { name: "John" },
       feedbackKey: crypto.randomUUID(),
     },
   });
-  for await (const result of completion2) {
+  for await (const result of completion) {
     console.log("Streamed Completion API replied with: ", result);
+  }
+}
+
+async function main() {
+  // Show help message if --help flag is passed
+  if (process.argv.includes("--help")) {
+    console.log(`Usage: ${process.argv[0]} ${process.argv[1]} [options]`);
+    console.log("");
+    console.log("Options:");
+    console.log("  --help    Show this help message");
+    console.log("  --legacy  Run legacy completion API test");
+    return;
+  }
+
+  await testStreamingChatAPI();
+
+  // Only run legacy completion API if --legacy flag is passed
+  if (process.argv.includes("--legacy")) {
+    await testStreamingCompletionAPI();
   }
 }
 
