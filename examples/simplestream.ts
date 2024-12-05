@@ -16,7 +16,7 @@ async function testStreamingChatAPI() {
     model: "gpt-4o-mini",
     stream: true,
     libretto: {
-      promptTemplateName: "ts-client-test-chat",
+      promptTemplateName: "ts-client-test-chat-2",
       templateParams: { name: "John" },
       feedbackKey: crypto.randomUUID(),
     },
@@ -59,14 +59,22 @@ async function main() {
     console.log("Options:");
     console.log("  --help    Show this help message");
     console.log("  --legacy  Run legacy completion API test");
+    console.log("  --repeat  Repeat the API calls a specified number of times");
     return;
   }
 
-  await testStreamingChatAPI();
+  // Determine the number of repetitions
+  const repeatIndex = process.argv.indexOf("--repeat");
+  const repeatCount =
+    repeatIndex !== -1 ? parseInt(process.argv[repeatIndex + 1], 10) : 1;
 
-  // Only run legacy completion API if --legacy flag is passed
-  if (process.argv.includes("--legacy")) {
-    await testStreamingCompletionAPI();
+  for (let i = 0; i < repeatCount; i++) {
+    await testStreamingChatAPI();
+
+    // Only run legacy completion API if --legacy flag is passed
+    if (process.argv.includes("--legacy")) {
+      await testStreamingCompletionAPI();
+    }
   }
 }
 
