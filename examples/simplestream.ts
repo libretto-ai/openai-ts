@@ -1,3 +1,4 @@
+import { faker } from "@faker-js/faker";
 import crypto from "crypto";
 import { f, objectTemplate } from "../src";
 import { OpenAI } from "../src/client";
@@ -17,7 +18,7 @@ async function testStreamingChatAPI() {
     stream: true,
     libretto: {
       promptTemplateName: "ts-client-test-chat-2",
-      templateParams: { name: "John" },
+      templateParams: { name: faker.person.firstName() },
       feedbackKey: crypto.randomUUID(),
     },
   });
@@ -42,7 +43,7 @@ async function testStreamingCompletionAPI() {
     stream: true,
     libretto: {
       promptTemplateName: "ts-client-test-completion",
-      templateParams: { name: "John" },
+      templateParams: { name: faker.person.firstName() },
       feedbackKey: crypto.randomUUID(),
     },
   });
