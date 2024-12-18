@@ -229,13 +229,13 @@ export async function sendFeedback(body: Feedback) {
   return responseJson;
 }
 
-export interface UpdateChainRequest {
+export interface UpdateChainParams {
   id: string;
   result?: string | null;
   apiKey?: string;
 }
 
-export async function updateChain(body: UpdateChainRequest) {
+export async function updateChain(body: UpdateChainParams) {
   if (!body.id) {
     console.warn("[Libretto] Could not update chain: missing id");
     return;
