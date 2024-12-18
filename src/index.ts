@@ -20,9 +20,12 @@ export type LibrettoCreateParams = {
   templateChat?: ChatCompletionMessage[];
   templateParams?: Record<string, any>;
   chatId?: string;
-  parentEventId?: string;
+  chainId?: string;
   feedbackKey?: string;
   context?: Record<string, any>;
+
+  /** @deprecated Use chainId instead */
+  parentEventId?: string;
 };
 
 //todo: should we mark these as readonly?
