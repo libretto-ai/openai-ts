@@ -92,7 +92,7 @@ added to the base OpenAI `create` call interface:
     string with `{}` placeholders.
 - `templateText`: The text template to record for non-chat completion requests.
   This is a string or a template string with `{}` placeholders.
-- `chainId`: A UUID that groups related events together in a chain.  For example,
+- `chainId`: A UUID that groups related events together in a chain. For example,
   if you have a multi-step workflow where one LLM call's output feeds into another
   LLM call, you can use the same chainId to track the full sequence of events.
 - `feedbackKey`: The optional key used to send feedback on the prompt, for
