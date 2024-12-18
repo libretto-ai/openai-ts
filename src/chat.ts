@@ -215,7 +215,7 @@ class LibrettoChatCompletions extends Completions {
         librettoParams?.promptTemplateName ?? this.config.promptTemplateName,
       prompt: {},
       chatId: librettoParams?.chatId ?? this.config.chatId,
-      parentEventId: librettoParams?.parentEventId,
+      chainId: librettoParams?.chainId ?? librettoParams?.parentEventId,
       feedbackKey,
       modelParameters: {
         modelProvider: "openai",

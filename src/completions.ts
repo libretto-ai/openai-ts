@@ -189,7 +189,7 @@ export class LibrettoCompletions extends Completions {
         librettoParams?.promptTemplateName ?? this.config.promptTemplateName,
       prompt: {},
       chatId: librettoParams?.chatId ?? this.config.chatId,
-      parentEventId: librettoParams?.parentEventId,
+      chainId: librettoParams?.chainId ?? librettoParams?.parentEventId,
       context: librettoParams?.context,
       feedbackKey,
       modelParameters: {

@@ -47,7 +47,7 @@ export interface EventMetadata {
   apiName?: string;
   apiKey?: string;
   chatId?: string;
-  parentEventId?: string;
+  chainId?: string;
   modelParameters?: ModelParameters;
   feedbackKey?: string;
   context?: Record<string, any>;
@@ -103,8 +103,15 @@ const SEND_EVENT_CONCURRENCY_LIMIT = 25;
 const SEND_EVENT_MAX_PENDING = 1000;
 const sendEventLimiter = pLimit(SEND_EVENT_CONCURRENCY_LIMIT);
 
+const uuidRegex =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function send_event(event: Event) {
   if (!event.apiKey) {
+    return;
+  }
+  if (event.chainId !== undefined && !uuidRegex.test(event.chainId)) {
+    console.error(`[Libretto] chainId '${event.chainId}' is not a valid UUID`);
     return;
   }
 

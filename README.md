@@ -92,8 +92,9 @@ added to the base OpenAI `create` call interface:
     string with `{}` placeholders.
 - `templateText`: The text template to record for non-chat completion requests.
   This is a string or a template string with `{}` placeholders.
-- `parentEventId`: The UUID of the parent event. All calls with the same
-  parent id are grouped as a "Run Group".
+- `chainId`: A UUID that groups related events together in a chain.  For example,
+  if you have a multi-step workflow where one LLM call's output feeds into another
+  LLM call, you can use the same chainId to track the full sequence of events.
 - `feedbackKey`: The optional key used to send feedback on the prompt, for
   use with `sendFeedback()` later. This is normally auto-generated, and the
   value is returned in the OpenAI response.
