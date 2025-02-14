@@ -182,8 +182,7 @@ export class LibrettoCompletions extends Completions {
         librettoParams?.apiKey ??
         this.config.apiKey ??
         process.env.LIBRETTO_API_KEY,
-      promptTemplateText:
-        librettoParams?.templateText ?? template ?? resolvedPromptStr,
+      promptTemplateText: template ?? resolvedPromptStr,
       promptTemplateName: resolvedPromptTemplateName,
       apiName:
         librettoParams?.promptTemplateName ?? this.config.promptTemplateName,

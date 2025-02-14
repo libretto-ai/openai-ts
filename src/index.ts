@@ -1,5 +1,3 @@
-import { ChatCompletionMessage } from "openai/resources/chat";
-
 export { OpenAI } from "./client";
 export { Event, Feedback, send_event, sendFeedback } from "./session";
 export { f, objectTemplate } from "./template";
@@ -16,8 +14,6 @@ export type LibrettoConfig = {
 export type LibrettoCreateParams = {
   apiKey?: string;
   promptTemplateName?: string;
-  templateText?: string;
-  templateChat?: ChatCompletionMessage[];
   templateParams?: Record<string, any>;
   chatId?: string;
   chainId?: string;
