@@ -19,18 +19,5 @@
         "LIBRETTO_API_PREFIX": "http://localhost:3000/api"
       }
     },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Debug Tambo",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["tsx"],
-      "program": "${workspaceRoot}/examples/tamboChatHistory.ts",
-      "cwd": "${workspaceRoot}",
-      "internalConsoleOptions": "openOnSessionStart",
-      "env": {
-        "LIBRETTO_API_PREFIX": "http://localhost:3000/api"
-      }
-    }
   ]
 }

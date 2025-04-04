@@ -14,7 +14,7 @@ async function main() {
         content: "What's the weather like in {location}?",
       },
     ]),
-    model: "gpt-3.5-turbo",
+    model: "gpt-4o-mini",
     tools: [
       {
         type: "function",
