@@ -41,7 +41,7 @@ async function main() {
     messages: objectTemplate([
       { role: "user", content: "Give a hearty welcome to our new user {name}" },
     ]),
-    model: "gpt-3.5-turbo",
+    model: "gpt-4o-mini",
     libretto: {
       // Uniquely identifies this prompt within your project.
       promptTemplateName: "ts-client-test-chat",

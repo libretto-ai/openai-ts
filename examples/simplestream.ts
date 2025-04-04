@@ -39,7 +39,7 @@ async function testStreamingCompletionAPI() {
   console.log("Testing Streaming Completion API...");
   const completion = await openai.completions.create({
     prompt: f`Tell a 20 word story about {name}` as unknown as string,
-    model: "gpt-3.5-turbo-instruct",
+    model: "gpt-4o-mini",
     stream: true,
     libretto: {
       promptTemplateName: "ts-client-test-completion",
