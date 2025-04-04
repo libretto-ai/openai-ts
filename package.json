@@ -39,7 +39,7 @@
     "zod": "^3.24.1"
   },
   "peerDependencies": {
-    "openai": "^4.68.4"
+    "openai": "^4.91.1"
   },
   "dependencies": {
     "@libretto/redact-pii-light": "^1.0.1",
