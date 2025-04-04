@@ -18,6 +18,6 @@
       "env": {
         "LIBRETTO_API_PREFIX": "http://localhost:3000/api"
       }
-    },
+    }
   ]
 }
