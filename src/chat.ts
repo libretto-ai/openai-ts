@@ -17,7 +17,8 @@ import { PiiRedactor } from "./pii";
 import {
   getResolvedMessages,
   getResolvedStream,
-  reJsonToolCalls,
+  ResolvedReturnValue,
+  ResolvedToolCall,
 } from "./resolvers";
 import { ResponseMetrics } from "./session";
 
@@ -109,22 +110,22 @@ class LibrettoChatCompletions extends Completions {
           try {
             response = redactor.redact(response);
             params = redactor.redact(params);
-            tool_calls = tool_calls.map((tool_call) => ({
-              id: tool_call.id,
-              name: tool_call.name,
-              argsAsJson: redactor.redact(tool_call.argsAsJson),
+            tool_calls = tool_calls?.map((tool_call) => ({
+              ...tool_call,
+              function: {
+                ...tool_call.function,
+                arguments: redactor.redact(tool_call?.function?.arguments),
+              },
             }));
           } catch (err) {
             console.log("Failed to redact PII", err);
           }
         }
-        const eventResponse = tool_calls.length
-          ? reJsonToolCalls(tool_calls)
-          : response;
 
         await this.prepareAndSendEvent({
           responseTime,
-          response: eventResponse,
+          response,
+          rawResponse: returnValue,
           params,
           feedbackKey,
           template,
@@ -134,6 +135,7 @@ class LibrettoChatCompletions extends Completions {
           responseMetrics,
           librettoParams: libretto,
           openaiBody,
+          toolCalls: tool_calls,
         });
       })
       .catch(async (error) => {
@@ -173,6 +175,7 @@ class LibrettoChatCompletions extends Completions {
 
   protected async prepareAndSendEvent({
     response,
+    rawResponse,
     responseTime,
     responseErrors,
     params,
@@ -184,8 +187,10 @@ class LibrettoChatCompletions extends Completions {
     openaiBody,
     feedbackKey,
     tools,
+    toolCalls,
   }: {
     response?: string | null | undefined;
+    rawResponse?: null | ResolvedReturnValue;
     responseTime?: number;
     responseErrors?: string[];
     params: Record<string, any>;
@@ -197,10 +202,12 @@ class LibrettoChatCompletions extends Completions {
     openaiBody: any;
     feedbackKey?: string;
     tools: Core.Chat.Completions.ChatCompletionTool[] | undefined;
+    toolCalls?: ResolvedToolCall[];
   }) {
     await send_event({
       responseTime,
       response,
+      rawResponse,
       responseErrors,
       responseMetrics,
       params: params,
@@ -221,7 +228,8 @@ class LibrettoChatCompletions extends Completions {
         modelType: "chat",
         ...openaiBody,
       },
-      tools: tools,
+      tools,
+      toolCalls,
     });
   }
 }
