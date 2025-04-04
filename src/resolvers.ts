@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { APIPromise } from "openai/core";
 import { ChatCompletionMessageParam } from "openai/resources/chat";
 import { Stream } from "openai/streaming";
+import { DeepPartial } from "ts-essentials";
 import { ResponseMetrics } from "./session";
 import {
   formatTemplate,
@@ -10,19 +11,23 @@ import {
   ObjectTemplate,
 } from "./template";
 
-export interface ToolCallAsJsonFragment {
-  id: string | undefined;
-  name: string;
-  /** A JSON representation of the arguments dictionary, e.g. `"{ \"arg1\": \"val1\" }"` */
-  argsAsJson: string;
-}
+// This allows for the streaming tool calls to work with this type.
+// The streaming tool calls are all optional, but the static completions are not.
+export type ResolvedToolCall =
+  DeepPartial<OpenAI.Chat.ChatCompletionMessageToolCall>;
 
 interface ResolvedAPIResult {
   response: string | null | undefined;
   /** Calls to any tools */
-  tool_calls: ToolCallAsJsonFragment[];
+  tool_calls?: ResolvedToolCall[];
   responseMetrics?: ResponseMetrics;
 }
+
+export type ResolvedReturnValue =
+  | Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
+  | Stream<OpenAI.Completions.Completion>
+  | OpenAI.Chat.Completions.ChatCompletion
+  | OpenAI.Completions.Completion;
 
 /** This function papers over the difference between streamed and unstreamed
  * responses. It splits the response into two parts:
@@ -43,11 +48,7 @@ export async function getResolvedStream(
   feedbackKey: string,
   isChat: boolean,
 ): Promise<{
-  returnValue:
-    | Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
-    | Stream<OpenAI.Completions.Completion>
-    | OpenAI.Chat.Completions.ChatCompletion
-    | OpenAI.Completions.Completion;
+  returnValue: ResolvedReturnValue;
   finalResultPromise: Promise<ResolvedAPIResult>;
 }> {
   // Handle stream
@@ -108,44 +109,19 @@ function getStaticChatCompletion(
     logprobs: result.choices?.[0]?.logprobs,
   };
 
-  if (result.choices[0].message.content) {
-    return {
-      response: result.choices[0].message.content,
-      tool_calls: [],
-      responseMetrics,
-    };
-  }
+  let responseContent = result.choices[0].message.content ?? undefined;
 
   // Deprecated Function calls
   if (result.choices[0].message.function_call) {
-    return {
-      response: JSON.stringify({
-        function_call: result.choices[0].message.function_call,
-      }),
-      tool_calls: [],
-      responseMetrics,
-    };
+    responseContent = JSON.stringify(result.choices[0].message.function_call);
   }
 
-  // Tools Calls
-  if (result.choices[0].message.tool_calls) {
-    return {
-      response: undefined,
-      tool_calls: result.choices[0].message.tool_calls.map(
-        (tool_call): ToolCallAsJsonFragment => ({
-          id: tool_call.id,
-          name: tool_call.function.name,
-          argsAsJson: tool_call.function.arguments,
-        }),
-      ),
-      responseMetrics,
-    };
-  }
+  const toolCalls = result.choices[0].message.tool_calls;
 
   // No content
   return {
-    response: undefined,
-    tool_calls: [],
+    response: responseContent,
+    tool_calls: toolCalls,
     responseMetrics,
   };
 }
@@ -264,11 +240,7 @@ class WrappedStream<
       [Symbol.asyncIterator]: () => iter,
     };
     const accumulatedResult: string[] = [];
-    const accumulatedTools: {
-      id: string | undefined;
-      name: string;
-      args: string[];
-    }[] = [];
+    const accumulatedTools: ResolvedAPIResult["tool_calls"] = [];
     try {
       for await (const item of iterable) {
         if (this.isChat) {
@@ -283,22 +255,15 @@ class WrappedStream<
           } else if (chatItem.choices[0].delta.tool_calls) {
             // Not sure what happens if tool_calls has > 1 item in a streaming context?
             const firstToolCall = chatItem.choices[0].delta.tool_calls[0];
+
+            const { index, ...toolCall } = firstToolCall;
+
             // We are assuming if there is more than one, then the index will
             // match up, i.e. the 2nd tool call in this response will have
             // index == 1
-            if (
-              firstToolCall.index >= accumulatedTools.length &&
-              firstToolCall.function?.name
-            ) {
-              accumulatedTools.push({
-                id: firstToolCall.id,
-                name: firstToolCall.function.name,
-                args: [firstToolCall.function.arguments ?? ""],
-              });
+            if (index >= accumulatedTools.length && toolCall.function?.name) {
+              accumulatedTools.push(toolCall);
             }
-            accumulatedTools[firstToolCall.index].args.push(
-              firstToolCall.function?.arguments ?? "",
-            );
           } else if (chatItem.choices[0].delta.function_call) {
             accumulatedResult.push(
               JSON.stringify(chatItem.choices[0].delta.function_call),
@@ -323,13 +288,7 @@ class WrappedStream<
       }
     } finally {
       this.resolveIterator({
-        tool_calls: accumulatedTools.map(
-          ({ id, name, args }): ToolCallAsJsonFragment => ({
-            id,
-            name,
-            argsAsJson: args.join(""),
-          }),
-        ),
+        tool_calls: accumulatedTools,
         response: accumulatedResult.join(""),
         responseMetrics: {
           usage: this.responseUsage,
@@ -339,20 +298,4 @@ class WrappedStream<
       });
     }
   }
-}
-/** Reformat json fragments into a JSON string representing `ChatCompletionMessageToolCall[]` */
-export function reJsonToolCalls(tool_calls: ToolCallAsJsonFragment[]) {
-  const tool_call_list = tool_calls
-    .map(
-      (tool_call) => `{
-      ${tool_call.id ? `"id": "${tool_call.id}"` : ""},
-      "type": "function",
-      "function": {
-        "name": "${tool_call.name}",
-        "arguments": ${tool_call.argsAsJson}
-      }
-    }`,
-    )
-    .join(",\n");
-  return `{"tool_calls": [${tool_call_list}]}`;
 }

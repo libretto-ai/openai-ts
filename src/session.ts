@@ -4,6 +4,7 @@ import { type CompletionCreateParamsNonStreaming } from "openai/resources";
 import { RunCreateParamsNonStreaming } from "openai/resources/beta/threads/runs/runs";
 import { type ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat";
 import pLimit from "p-limit";
+import { ResolvedReturnValue, ResolvedToolCall } from "./resolvers";
 
 function getUrl(apiName: string, environmentName: string): string {
   if (process.env[environmentName]) {
@@ -72,15 +73,18 @@ export interface ResponseMetrics {
     | null;
 }
 
-export interface PromptEvent {
+interface PromptEvent {
   params: Record<string, any>;
   /** Included after response */
   response?: string | null;
+  /** Plain, raw result from OpenAI */
+  rawResponse?: ResolvedReturnValue | null;
+  /** Possible list of  */
+  toolCalls?: ResolvedToolCall[] | null;
   /** Response time in ms */
   responseTime?: number;
   /** Included only if there is an error from openai, or error in validation */
   responseErrors?: string[];
-
   responseMetrics?: ResponseMetrics;
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   prompt: {}; //hack

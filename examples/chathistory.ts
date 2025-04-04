@@ -23,7 +23,7 @@ async function main() {
         content: "{coach_question}",
       },
     ]) as ChatCompletionMessageParam[], // need to cast because of chat_history
-    model: "gpt-3.5-turbo",
+    model: "gpt-4o-mini",
     temperature: 1,
     libretto: {
       promptTemplateName: "AI Supervisor",
