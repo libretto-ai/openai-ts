@@ -215,7 +215,8 @@ class LibrettoChatCompletions extends Completions {
         librettoParams?.apiKey ??
         this.config.apiKey ??
         process.env.LIBRETTO_API_KEY,
-      promptTemplateChat: template ?? resolvedMessages,
+      promptTemplateChat:
+        librettoParams?.templateChat ?? template ?? resolvedMessages,
       promptTemplateName: resolvedPromptTemplateName,
       apiName:
         librettoParams?.promptTemplateName ?? this.config.promptTemplateName,
