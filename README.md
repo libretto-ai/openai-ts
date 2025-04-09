@@ -85,6 +85,11 @@ added to the base OpenAI `create` call interface:
   conversational context, then the same chat id can be provided so that the
   events are grouped together, in order. If not provided, this will be left
   blank.
+- `templateChat`: The chat _template_ to record for chat requests. This is a
+  list of dictionaries with the following keys:
+  - `role`: The role of the speaker. Either `"system"`, `"user"` or `"ai"`.
+  - `content`: The content of the message. This can be a string or a template
+    string with `{}` placeholders.
 - `chainId`: A UUID that groups related events together in a chain. For example,
   if you have a multi-step workflow where one LLM call's output feeds into another
   LLM call, you can use the same chainId to track the full sequence of events.
