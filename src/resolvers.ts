@@ -359,7 +359,7 @@ class WrappedStream<
   }
 
   /**
-   * Here are how the chunks might look if there are multipl tool calls as well.
+   * Here are how the chunks might look if there are multiple tool calls as well.
    * 
    * // Chunk 1
 {
