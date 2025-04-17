@@ -21,6 +21,9 @@ interface ResolvedAPIResult {
   /** Calls to any tools */
   tool_calls?: ResolvedToolCall[];
   responseMetrics?: ResponseMetrics;
+  // Allows for streaming to set a final "raw" response
+  // Using any because this just gets serialized and sent to the server
+  streamRawResponse?: any;
 }
 
 export type ResolvedReturnValue =
@@ -239,40 +242,64 @@ class WrappedStream<
     const iterable = {
       [Symbol.asyncIterator]: () => iter,
     };
+
     const accumulatedResult: string[] = [];
-    const accumulatedTools: ResolvedAPIResult["tool_calls"] = [];
+
+    // This stores the chunks at the index of the tool number
+    const accumulatedToolChunks: Record<
+      number,
+      OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[]
+    > = [];
+
+    let firstChatChunk: OpenAI.Chat.Completions.ChatCompletionChunk | null =
+      null;
+
     try {
       for await (const item of iterable) {
         if (this.isChat) {
           const chatItem = item as OpenAI.Chat.Completions.ChatCompletionChunk;
+          if (!firstChatChunk) {
+            firstChatChunk = chatItem;
+          }
+
           if (!chatItem.libretto) {
             chatItem.libretto = {};
           }
           chatItem.libretto.feedbackKey = this.feedbackKey;
 
+          // https://community.openai.com/t/usage-stats-now-available-when-using-streaming-with-the-chat-completions-api-or-completions-api/738156/3
+          // This is a special case, and content is empty on the final usage block
+          if (chatItem.usage) {
+            this.responseUsage = chatItem.usage;
+            continue;
+          }
+
+          // Accumulate message content
           if (chatItem.choices[0].delta.content) {
             accumulatedResult.push(chatItem.choices[0].delta.content);
-          } else if (chatItem.choices[0].delta.tool_calls) {
-            // Not sure what happens if tool_calls has > 1 item in a streaming context?
-            const firstToolCall = chatItem.choices[0].delta.tool_calls[0];
+          }
 
-            const { index, ...toolCall } = firstToolCall;
+          // Accumulate the tool choices
+          if (chatItem.choices[0].delta.tool_calls) {
+            // Accumulate all of the chunks at the given index of the tool call
+            chatItem.choices[0].delta.tool_calls.forEach((toolCall) => {
+              const index = toolCall.index ?? 0;
 
-            // We are assuming if there is more than one, then the index will
-            // match up, i.e. the 2nd tool call in this response will have
-            // index == 1
-            if (index >= accumulatedTools.length && toolCall.function?.name) {
-              accumulatedTools.push(toolCall);
-            }
+              if (!accumulatedToolChunks[index]) {
+                accumulatedToolChunks[index] = [];
+              }
+              accumulatedToolChunks[index].push(toolCall);
+            });
           } else if (chatItem.choices[0].delta.function_call) {
             accumulatedResult.push(
               JSON.stringify(chatItem.choices[0].delta.function_call),
             );
           }
-          this.finishReason = chatItem.choices[0].finish_reason;
-          // TODO: get usage from streaming chat. This is currently missing from the API!
-          // https://community.openai.com/t/openai-api-get-usage-tokens-in-response-when-set-stream-true/141866
-          // https://community.openai.com/t/chat-completion-stream-api-token-usage/352964
+
+          // finish reason and usage can just be set when we see it
+          if (chatItem.choices[0].finish_reason) {
+            this.finishReason = chatItem.choices[0].finish_reason;
+          }
         } else {
           const completionItem = item as OpenAI.Completions.Completion;
           if (!completionItem.libretto) {
@@ -287,9 +314,41 @@ class WrappedStream<
         yield item;
       }
     } finally {
+      // Need to collect the tool call pieces
+      const finalResponse = accumulatedResult.join("");
+      const finalToolCalls = this.makeToolCalls(accumulatedToolChunks);
+
+      /**
+       * We try to sort of reconstruct what a final response would look like
+       */
+      const finalRawResponse = { ...firstChatChunk };
+      if (finalResponse && finalRawResponse?.choices?.[0]?.delta?.content) {
+        finalRawResponse.choices[0].delta.content = finalResponse;
+      }
+
+      if (finalToolCalls && finalRawResponse?.choices?.[0]?.delta?.tool_calls) {
+        finalRawResponse.choices[0].delta.tool_calls = finalToolCalls;
+      }
+
+      if (this.responseUsage) {
+        finalRawResponse.usage = this.responseUsage;
+      }
+
+      if (this.finishReason && finalRawResponse?.choices?.[0]?.finish_reason) {
+        finalRawResponse.choices[0].finish_reason = this.finishReason;
+      }
+
+      // add an indicator it's from a libretto stream
+      finalRawResponse.libretto = finalRawResponse.libretto ?? {};
+      finalRawResponse.libretto.context = {
+        ...finalRawResponse.libretto.context,
+        isLibrettoStream: true,
+      };
+
       this.resolveIterator({
-        tool_calls: accumulatedTools,
-        response: accumulatedResult.join(""),
+        tool_calls: finalToolCalls,
+        response: finalResponse,
+        streamRawResponse: finalRawResponse,
         responseMetrics: {
           usage: this.responseUsage,
           finish_reason: this.finishReason,
@@ -297,5 +356,124 @@ class WrappedStream<
         },
       });
     }
+  }
+
+  /**
+   * Here are how the chunks might look if there are multiple tool calls as well.
+   * 
+   * // Chunk 1
+{
+  "choices": [
+    {
+      "delta": {
+        "tool_calls": [
+          {
+            "id": "call_1",
+            "type": "function",
+            "function": {
+              "name": "get_weather"
+            }
+          },
+          {
+            "id": "call_2",
+            "type": "function",
+            "function": {
+              "name": "get_time"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+
+and then the next ones might look like this:
+// Chunk 2
+{
+  "choices": [
+    {
+      "delta": {
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{ \"location\": \"New"
+            }
+          },
+          {
+            "function": {
+              "arguments": "{ \"timezone\": \"ES"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+
+// Chunk 3
+{
+  "choices": [
+    {
+      "delta": {
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": " York\" }"
+            }
+          },
+          {
+            "function": {
+              "arguments": "T\" }"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+   */
+  private makeToolCalls(
+    accumulatedToolCalls?: Record<
+      number,
+      OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[]
+    >,
+  ):
+    | OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[]
+    | undefined {
+    // Nothing to do
+    if (
+      !accumulatedToolCalls ||
+      Object.keys(accumulatedToolCalls).length === 0
+    ) {
+      return;
+    }
+
+    const returnTools: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[] =
+      [];
+
+    Object.keys(accumulatedToolCalls)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .forEach((index) => {
+        const toolCallChunks = accumulatedToolCalls[index];
+
+        // First one has the id and full info, other ones after just have function args added
+        const firstToolCall = toolCallChunks.shift();
+        if (!firstToolCall) {
+          return;
+        }
+
+        for (const toolCall of toolCallChunks) {
+          if (toolCall.function && toolCall.function.arguments) {
+            if (firstToolCall && firstToolCall.function) {
+              firstToolCall.function.arguments += toolCall.function.arguments;
+            }
+          }
+        }
+
+        returnTools.push(firstToolCall);
+      });
+
+    return returnTools;
   }
 }

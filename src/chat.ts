@@ -17,7 +17,6 @@ import { PiiRedactor } from "./pii";
 import {
   getResolvedMessages,
   getResolvedStream,
-  ResolvedReturnValue,
   ResolvedToolCall,
 } from "./resolvers";
 import { ResponseMetrics } from "./session";
@@ -79,6 +78,14 @@ class LibrettoChatCompletions extends Completions {
       libretto?.templateParams,
     );
 
+    // usage stats are now allowed to be retrieved if it's a stream, so add that property if it's a stream
+    if (stream) {
+      openaiBody.stream_options = {
+        ...openaiBody.stream_options,
+        include_usage: true,
+      };
+    }
+
     const resultPromise = super.create(
       { ...openaiBody, messages: resolvedMessages, tools: tools, stream },
       options,
@@ -100,44 +107,59 @@ class LibrettoChatCompletions extends Completions {
     );
 
     const sendEventPromise = finalResultPromise
-      .then(async ({ response, tool_calls, responseMetrics }) => {
-        const responseTime = Date.now() - now;
-        let params = libretto?.templateParams ?? {};
-
-        // Redact PII before recording the event
-        if (this.piiRedactor) {
-          const redactor = this.piiRedactor;
-          try {
-            response = redactor.redact(response);
-            params = redactor.redact(params);
-            tool_calls = tool_calls?.map((tool_call) => ({
-              ...tool_call,
-              function: {
-                ...tool_call.function,
-                arguments: redactor.redact(tool_call?.function?.arguments),
-              },
-            }));
-          } catch (err) {
-            console.log("Failed to redact PII", err);
-          }
-        }
-
-        await this.prepareAndSendEvent({
-          responseTime,
+      .then(
+        async ({
           response,
-          rawResponse: returnValue,
-          params,
-          feedbackKey,
-          template,
-          resolvedPromptTemplateName,
-          resolvedMessages,
-          tools,
+          tool_calls,
           responseMetrics,
-          librettoParams: libretto,
-          openaiBody,
-          toolCalls: tool_calls,
-        });
-      })
+          streamRawResponse,
+        }) => {
+          const responseTime = Date.now() - now;
+          let params = libretto?.templateParams ?? {};
+
+          // Redact PII before recording the event
+          if (this.piiRedactor) {
+            const redactor = this.piiRedactor;
+            try {
+              response = redactor.redact(response);
+              params = redactor.redact(params);
+              tool_calls = tool_calls?.map((tool_call) => ({
+                ...tool_call,
+                function: {
+                  ...tool_call.function,
+                  arguments: redactor.redact(tool_call?.function?.arguments),
+                },
+              }));
+            } catch (err) {
+              console.log("Failed to redact PII", err);
+            }
+          }
+
+          /**
+           * Unfortunately for streams we have to sort of construct the raw response ourselves, so use that.
+           * For static completions, we can just use the raw return from the api call.
+           */
+          const rawResponse = streamRawResponse
+            ? streamRawResponse
+            : returnValue;
+
+          await this.prepareAndSendEvent({
+            responseTime,
+            response,
+            rawResponse,
+            params,
+            feedbackKey,
+            template,
+            resolvedPromptTemplateName,
+            resolvedMessages,
+            tools,
+            responseMetrics,
+            librettoParams: libretto,
+            openaiBody,
+            toolCalls: tool_calls,
+          });
+        },
+      )
       .catch(async (error) => {
         const responseTime = Date.now() - now;
         // Capture OpenAI API errors here
@@ -190,7 +212,7 @@ class LibrettoChatCompletions extends Completions {
     toolCalls,
   }: {
     response?: string | null | undefined;
-    rawResponse?: null | ResolvedReturnValue;
+    rawResponse?: null | any;
     responseTime?: number;
     responseErrors?: string[];
     params: Record<string, any>;

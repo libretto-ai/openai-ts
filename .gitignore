@@ -3,3 +3,6 @@ lib/
 coverage/
 .envrc
 .direnv
+
+.vscode/launch.json
+.DS_Store
